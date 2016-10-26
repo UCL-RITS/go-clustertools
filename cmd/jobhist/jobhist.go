@@ -357,7 +357,7 @@ func showInfoElements() {
 }
 
 func getJobData(query string) []*accountingRow {
-	con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.data.legion.ucl.ac.uk:3306)/sgelogs2")
+	con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.external.legion.ucl.ac.uk:3306)/")
 	defer con.Close()
 
 	if err != nil {
