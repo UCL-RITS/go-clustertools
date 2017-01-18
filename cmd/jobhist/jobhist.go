@@ -84,6 +84,7 @@ type accountingRow struct {
 func accountingRowsAssign(rows *sql.Rows) []*accountingRow {
 	rowArray := make([]*accountingRow, 0, 0)
 
+	i := 0
 	for rows.Next() {
 		var s accountingRow
 		err := rows.Scan(
@@ -154,6 +155,10 @@ func accountingRowsAssign(rows *sql.Rows) []*accountingRow {
 			log.Fatal(err)
 		}
 		rowArray = append(rowArray, &s)
+		i += 1
+	}
+	if *debug {
+		log.Printf("%d rows captured", i)
 	}
 	return rowArray
 }
@@ -403,6 +408,9 @@ func dropUnsafeChars(r rune) rune {
 	if (r < 'a') || (r > 'z') {
 		if (r < '0') || (r > '9') {
 			if r != '-' {
+				if *debug {
+					log.Printf("unsafe character dropped: %v", r)
+				}
 				return -1
 			}
 		}
@@ -462,7 +470,7 @@ func main() {
 	searchDB := clusterDBTables[*searchCluster]
 
 	query := "SELECT *, " +
-		"DATE_FORMAT(FROM_UNIXTIME(submission_time), \"%Y-%m-%d %%T\") AS fsubtime," +
+		"DATE_FORMAT(FROM_UNIXTIME(submission_time), \"%Y-%m-%d %T\") AS fsubtime," +
 		"DATE_FORMAT(FROM_UNIXTIME(start_time), \"%Y-%m-%d %T\") AS fstime, " +
 		"DATE_FORMAT(FROM_UNIXTIME(end_time), \"%Y-%m-%d %T\") AS fetime, " +
 		"end_time - start_time AS ewalltime, " +
@@ -470,7 +478,7 @@ func main() {
 
 	query = fmt.Sprintf("%s FROM %s.accounting WHERE ", query, searchDB)
 
-	query = fmt.Sprintf("%s end_time > (UNIX_TIMESTAMP(SUBTIME(NOW(), \"%d:00:00\"))) ", query, *searchBackHours)
+	query = fmt.Sprintf("%s end_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR))) ", query, (uint64)(*searchBackHours))
 
 	if *searchUser != "*" {
 		// Check for username validity
@@ -489,6 +497,10 @@ func main() {
 	}
 
 	query = fmt.Sprintf("%s ORDER BY end_time ", query)
+
+	if *debug {
+		log.Printf("Making query: %s", query)
+	}
 
 	// TODO: add timeout on DB connection
 	// https://blog.golang.org/go-concurrency-patterns-timing-out-and
