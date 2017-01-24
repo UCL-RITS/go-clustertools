@@ -382,7 +382,7 @@ func getJobData(query string) []*accountingRow {
 
 func printJobData(rows []*accountingRow, elements []string) {
 	if len(rows) == 0 {
-		fmt.Println("No entries found.")
+		fmt.Printf("No entries found. (Last %d hours searched.)\n", *searchBackHours)
 		return
 	}
 
