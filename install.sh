@@ -5,10 +5,10 @@ set -o errexit  \
     -o pipefail
 
 function check_for_go () {
-    if [ -n "$GOROOT" ] && which go >/dev/null 2>/dev/null; then
+    if [ -n "${GOROOT:-}" ] && which go >/dev/null 2>/dev/null; then
             echo "Found go compiler." >&2
     else
-        if [ -n "$tried_module" ]; then
+        if [ -n "${tried_module:-}" ]; then
             echo "Could not get a go compiler, exiting..." >&2
             exit 1
         fi
