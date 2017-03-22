@@ -6,18 +6,10 @@ set -o errexit  \
 
 function check_for_go () {
     if [ -n "${GOROOT:-}" ] && which go >/dev/null 2>/dev/null; then
-            echo "Found go compiler." >&2
+        echo "Found go compiler." >&2
     else
-        if [ -n "${tried_module:-}" ]; then
-            echo "Could not get a go compiler, exiting..." >&2
-            exit 1
-        fi
-        if [ -n "$(declare -f module)" ]; then
-            echo "Could not find go compiler, trying to load module." >&2
-            module load compilers/go
-            tried_module="true"
-            check_for_go
-        fi
+        echo "Could not get a go compiler, exiting..." >&2
+        exit 1
     fi
 }    
 
