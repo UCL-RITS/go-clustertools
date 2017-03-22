@@ -12,7 +12,7 @@ function check_for_go () {
             echo "Could not get a go compiler, exiting..." >&2
             exit 1
         fi
-        if [ -n "$(type -f module)" ]; then
+        if [ -n "$(declare -f module)" ]; then
             echo "Could not find go compiler, trying to load module." >&2
             module load compilers/go
             tried_module="true"
