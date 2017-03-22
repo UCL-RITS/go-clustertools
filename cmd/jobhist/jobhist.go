@@ -74,12 +74,12 @@ type accountingRow struct {
 	C__l__penalty      float64 //,
 	C__l__threads      int     //,
 	// ^-- db columns, v-- statement-calculated values
-	fsubtime  string  //, 'Formatted submission time',
-	fstime    string  //, 'Formatted start time',
-	fetime    string  //, 'Formatted end time',
-	ewalltime int     //, 'Elapsed walltime',
-	waittime  int     //, 'Time between submission and starting',
-	eff       float64 //, 'Experimental efficiency calculation',
+	fsubtime       string  //, 'Formatted submission time',
+	fstime         string  //, 'Formatted start time',
+	fetime         string  //, 'Formatted end time',
+	ewalltime      int     //, 'Elapsed walltime',
+	waittime       int     //, 'Time between submission and starting',
+	cpu_efficiency float64 //, 'Experimental efficiency calculation',
 }
 
 func accountingRowsAssign(rows *sql.Rows) []*accountingRow {
@@ -152,7 +152,7 @@ func accountingRowsAssign(rows *sql.Rows) []*accountingRow {
 			&s.fetime,
 			&s.ewalltime,
 			&s.waittime,
-			&s.eff)
+			&s.cpu_efficiency)
 		if err != nil {
 			log.Println(err)
 			log.Fatal("Problem line: ", rows)
@@ -294,10 +294,10 @@ func getNamedElement(s *accountingRow, element string) string {
 		return strconv.Itoa(s.ewalltime)
 	case "waittime":
 		return strconv.Itoa(s.waittime)
-	case "eff":
-		return strconv.FormatFloat(s.eff, 'f', 9, 32)
+	case "cpu_efficiency":
+		return strconv.FormatFloat(s.cpu_efficiency, 'f', 9, 32)
 	default:
-		return "!!!!!"
+		return "(element not found)"
 	}
 
 }
@@ -364,7 +364,7 @@ func showInfoElements() {
 	fetime,
 	ewalltime,
 	waittime
-	eff # Experimental!`)
+	cpu_efficiency # Experimental!`)
 }
 
 func getJobData(query string) []*accountingRow {
