@@ -74,11 +74,12 @@ type accountingRow struct {
 	C__l__penalty      float64 //,
 	C__l__threads      int     //,
 	// ^-- db columns, v-- statement-calculated values
-	fsubtime  string //, 'Formatted submission time',
-	fstime    string //, 'Formatted start time',
-	fetime    string //, 'Formatted end time',
-	ewalltime int    //, 'Elapsed walltime,
-	waittime  int    //, 'Time between submission and starting,
+	fsubtime       string  //, 'Formatted submission time',
+	fstime         string  //, 'Formatted start time',
+	fetime         string  //, 'Formatted end time',
+	ewalltime      int     //, 'Elapsed walltime',
+	waittime       int     //, 'Time between submission and starting',
+	cpu_efficiency float64 //, 'Experimental efficiency calculation',
 }
 
 func accountingRowsAssign(rows *sql.Rows) []*accountingRow {
@@ -150,9 +151,11 @@ func accountingRowsAssign(rows *sql.Rows) []*accountingRow {
 			&s.fstime,
 			&s.fetime,
 			&s.ewalltime,
-			&s.waittime)
+			&s.waittime,
+			&s.cpu_efficiency)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			log.Fatal("Problem line: ", rows)
 		}
 		rowArray = append(rowArray, &s)
 		i += 1
@@ -291,8 +294,10 @@ func getNamedElement(s *accountingRow, element string) string {
 		return strconv.Itoa(s.ewalltime)
 	case "waittime":
 		return strconv.Itoa(s.waittime)
+	case "cpu_efficiency":
+		return strconv.FormatFloat(s.cpu_efficiency, 'f', 9, 32)
 	default:
-		return "!!!!!"
+		return "(element not found)"
 	}
 
 }
@@ -358,7 +363,8 @@ func showInfoElements() {
 	fstime,
 	fetime,
 	ewalltime,
-	waittime`)
+	waittime
+	cpu_efficiency # Experimental!`)
 }
 
 func getJobData(query string) []*accountingRow {
@@ -479,7 +485,9 @@ func main() {
 		"DATE_FORMAT(FROM_UNIXTIME(start_time), \"%Y-%m-%d %T\") AS fstime, " +
 		"DATE_FORMAT(FROM_UNIXTIME(end_time), \"%Y-%m-%d %T\") AS fetime, " +
 		"end_time - start_time AS ewalltime, " +
-		"CAST(start_time AS SIGNED INTEGER) - CAST(submission_time AS SIGNED INTEGER) as waittime "
+		"CAST(start_time AS SIGNED INTEGER) - CAST(submission_time AS SIGNED INTEGER) as waittime, " +
+		"(ru_utime + ru_stime) / (slots * (0.9+CAST(end_time AS SIGNED INTEGER) - CAST(start_time AS SIGNED INTEGER))) AS eff "
+		// avoid div/0 errors by adding 0.9 -- works out that jobs taking less than a second take 0.9 seconds
 
 	query = fmt.Sprintf("%s FROM %s.accounting WHERE ", query, searchDB)
 
