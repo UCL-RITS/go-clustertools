@@ -469,7 +469,7 @@ func main() {
 	clusterDBTables := map[string]string{
 		"legion": "sgelogs2",
 		"grace":  "grace_sgelogs",
-		"thomas": "unknown",
+		"thomas": "thomas_sgelogs",
 	}
 
 	if *searchCluster == "auto" {
