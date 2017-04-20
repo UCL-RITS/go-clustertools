@@ -454,11 +454,13 @@ var (
 	infoEls         = kingpin.Flag("info", "Show selected info (CSV list).").Short('i').Default("fstime,fetime,hostname,owner,job_number,task_number,exit_status,job_name").String()
 	// TODO: implement timeout
 	//timeoutSeconds  = kingpin.Flag("timeout", "Seconds to wait for database response.").Short('t').Default("3").Int()
+	commitLabel string
+	buildDate   string
 )
 
 func main() {
 
-	kingpin.Version("0.0.1")
+	kingpin.Version(fmt.Sprintf("jobhist 0.0.1 commit %s built on %s", commitLabel, buildDate))
 	kingpin.Parse()
 
 	if *showInfoEls != false {

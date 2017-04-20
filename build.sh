@@ -5,6 +5,9 @@
 mkdir -p bin
 
 for dir in ./cmd/*; do
-    go build -o "bin/${dir##*/}" "$dir"
+    go build \
+        -ldflags "-X main.buildDate=$(date +%Y-%m-%d) -X main.commitLabel=$(git rev-parse --short HEAD)" \
+        -o "bin/${dir##*/}" \
+        "$dir" 
 done
 
