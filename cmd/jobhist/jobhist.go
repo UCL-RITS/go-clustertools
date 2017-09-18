@@ -363,8 +363,9 @@ func showInfoElements() {
 	fstime,
 	fetime,
 	ewalltime,
-	waittime
-	cpu_efficiency # Experimental!`)
+	waittime,
+	cpu_efficiency, # Experimental!
+	stdset # (shortcut for default group)`)
 }
 
 func getJobData(query string) []*accountingRow {
@@ -527,6 +528,18 @@ func main() {
 
 	jobData := getJobData(query)
 
-	printJobData(jobData, strings.Split(*infoEls, ","))
+	// This snippet could be made more abstract, but we only want one shortcut right now.
+	splitInfoEls := strings.Split(*infoEls, ",")
+	var newInfoEls []string
+	standardSet := []string{"fstime", "fetime", "hostname", "owner", "job_number", "task_number", "exit_status", "job_name"}
 
+	for _, el := range splitInfoEls {
+		if el != "stdset" {
+			newInfoEls = append(newInfoEls, el)
+		} else {
+			newInfoEls = append(newInfoEls, standardSet...)
+		}
+	}
+
+	printJobData(jobData, newInfoEls)
 }
