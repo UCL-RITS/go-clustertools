@@ -472,6 +472,7 @@ func main() {
 	}
 
 	clusterDBTables := map[string]string{
+		"myriad": "myriad_sgelogs",
 		"legion": "sgelogs2",
 		"grace":  "grace_sgelogs",
 		"thomas": "thomas_sgelogs",
