@@ -430,6 +430,7 @@ func getLocalClusterName() string {
 	if err != nil {
 		log.Fatal(err)
 	}
+	hostname = strings.SplitN(hostname, ".", 2)[0] // Gets only the first segment of the hostname
 	clusterMap := map[string]string{
 		"^(?:login1[23]|node-[hij]00a-[0-9]{3})$":                 "myriad",
 		"^(?:login0[12]|node-r99a-[0-9]{3})$":                     "grace",
