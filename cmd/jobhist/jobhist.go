@@ -451,6 +451,7 @@ var (
 	debug           = kingpin.Flag("debug", "Enable debug mode.").Bool()
 	searchBackHours = kingpin.Flag("hours", "Number of hours back in time to search.").Short('h').PlaceHolder("<hours>").Default("24").Int()
 	searchUser      = kingpin.Flag("user", "User to search for jobs from.").Short('u').PlaceHolder("<username>").Default(os.Getenv("USER")).String()
+	searchJob       = kingpin.Flag("job", "Job number to search for.").Short('j').PlaceHolder("<job number>").Default("-1").Int()
 	searchMHost     = kingpin.Flag("host", "Search for jobs that used a given node as the master.").Short('n').PlaceHolder("<hostname>").Default("(none)").String()
 	searchCluster   = kingpin.Flag("cluster", "Search jobs run in a given cluster (myriad|legion|grace|thomas)").Short('c').PlaceHolder("<cluster>").Default("auto").String()
 	showInfoEls     = kingpin.Flag("list-elements", "Show list of elements that can be displayed.").Short('l').Bool()
@@ -506,6 +507,10 @@ func main() {
 			log.Fatal("Error: Invalid username.")
 		}
 		query = fmt.Sprintf("%s AND owner = \"%s\" ", query, *searchUser)
+	}
+
+	if *searchJob > 0 {
+		query = fmt.Sprintf("%s AND job_number = %d ", query, *searchJob)
 	}
 
 	if *searchMHost != "(none)" {
