@@ -80,6 +80,7 @@ type accountingRow struct {
 	ewalltime      int     //, 'Elapsed walltime',
 	waittime       int     //, 'Time between submission and starting',
 	cpu_efficiency float64 //, 'Experimental efficiency calculation',
+	req_time       int     //, 'Requested job time',
 }
 
 func accountingRowsAssign(rows *sql.Rows) []*accountingRow {
@@ -152,7 +153,9 @@ func accountingRowsAssign(rows *sql.Rows) []*accountingRow {
 			&s.fetime,
 			&s.ewalltime,
 			&s.waittime,
-			&s.cpu_efficiency)
+			&s.cpu_efficiency,
+			&s.req_time,
+		)
 		if err != nil {
 			log.Println(err)
 			log.Fatal("Problem line: ", rows)
@@ -294,6 +297,8 @@ func getNamedElement(s *accountingRow, element string) string {
 		return strconv.Itoa(s.ewalltime)
 	case "waittime":
 		return strconv.Itoa(s.waittime)
+	case "req_time":
+		return strconv.Itoa(s.req_time)
 	case "cpu_efficiency":
 		return strconv.FormatFloat(s.cpu_efficiency, 'f', 9, 32)
 	default:
@@ -365,10 +370,13 @@ func showInfoElements() {
 	ewalltime,
 	waittime,
 	cpu_efficiency, # Experimental!
+	req_time,
 	stdset # (shortcut for default group)`)
 }
 
 func getJobData(query string) []*accountingRow {
+	// Might need allowNativePasswords=True in future - need to look into it more
+	//con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.external.legion.ucl.ac.uk:3306)/?allowNativePasswords=True")
 	con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.external.legion.ucl.ac.uk:3306)/")
 	defer con.Close()
 
@@ -462,6 +470,15 @@ var (
 	buildDate   string
 )
 
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
 func main() {
 
 	kingpin.Version(fmt.Sprintf("jobhist 0.0.1 commit %s built on %s", commitLabel, buildDate))
@@ -472,6 +489,22 @@ func main() {
 		os.Exit(0)
 	}
 
+	// This snippet could be made more abstract, but we only want one shortcut right now.
+	splitInfoEls := strings.Split(*infoEls, ",")
+	var displayInfoEls []string
+	standardSet := []string{"fstime", "fetime", "hostname", "owner", "job_number", "task_number", "exit_status", "job_name"}
+
+	for _, el := range splitInfoEls {
+		if el != "stdset" {
+			displayInfoEls = append(displayInfoEls, el)
+		} else {
+			displayInfoEls = append(displayInfoEls, standardSet...)
+		}
+	}
+
+	// Build SQL Query
+
+	// First the FROM:
 	clusterDBTables := map[string]string{
 		"myriad": "myriad_sgelogs",
 		"legion": "sgelogs2",
@@ -487,7 +520,11 @@ func main() {
 		log.Fatal("Error: there is no known database for this cluster.")
 	}
 
-	query := "SELECT *, " +
+	queryFrom := searchDB
+
+	// Next the SELECT:
+
+	querySelect := "*, " +
 		"DATE_FORMAT(FROM_UNIXTIME(submission_time), \"%Y-%m-%d %T\") AS fsubtime," +
 		"DATE_FORMAT(FROM_UNIXTIME(start_time), \"%Y-%m-%d %T\") AS fstime, " +
 		"DATE_FORMAT(FROM_UNIXTIME(end_time), \"%Y-%m-%d %T\") AS fetime, " +
@@ -496,9 +533,23 @@ func main() {
 		"(ru_utime + ru_stime) / (slots * (0.9+CAST(end_time AS SIGNED INTEGER) - CAST(start_time AS SIGNED INTEGER))) AS eff "
 		// avoid div/0 errors by adding 0.9 -- works out that jobs taking less than a second take 0.9 seconds
 
-	query = fmt.Sprintf("%s FROM %s.accounting WHERE ", query, searchDB)
+	// This element is expensive to retrieve, so we want to avoid calculating it if we don't need it
+	if stringInSlice("req_time", displayInfoEls) {
+		querySelect += ", substr(`accounting`.`category`,(locate('h_rt=',`accounting`.`category`) + 5),(locate(',',substr(`accounting`.`category`,(locate('h_rt=',`accounting`.`category`) + 5))) - 1)) AS `req_time`"
+	} else {
+		querySelect += ", 0 as `req_time`"
+	}
 
-	query = fmt.Sprintf("%s end_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR))) ", query, (uint64)(*searchBackHours))
+	// Finally the WHERE:
+	time_condition := " (" +
+		"        (end_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR)))) OR " +
+		"      (start_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR)))) OR " +
+		" (submission_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR))))" +
+		") "
+	queryWhere := fmt.Sprintf(time_condition,
+		(uint64)(*searchBackHours),
+		(uint64)(*searchBackHours),
+		(uint64)(*searchBackHours))
 
 	if *searchUser != "*" {
 		// Check for username validity
@@ -506,21 +557,21 @@ func main() {
 			(len(strings.Map(dropUnsafeChars, *searchUser)) < len(*searchUser)) {
 			log.Fatal("Error: Invalid username.")
 		}
-		query = fmt.Sprintf("%s AND owner = \"%s\" ", query, *searchUser)
+		queryWhere = fmt.Sprintf("%s AND owner = \"%s\" ", queryWhere, *searchUser)
 	}
 
 	if *searchJob > 0 {
-		query = fmt.Sprintf("%s AND job_number = %d ", query, *searchJob)
+		queryWhere = fmt.Sprintf("%s AND job_number = %d ", queryWhere, *searchJob)
 	}
 
 	if *searchMHost != "(none)" {
 		if len(strings.Map(dropUnsafeChars, *searchMHost)) < len(*searchMHost) {
 			log.Fatal("Error: Invalid hostname.")
 		}
-		query = fmt.Sprintf("%s AND hostname = \"%s\" ", query, *searchMHost)
+		queryWhere = fmt.Sprintf("%s AND hostname = \"%s\" ", queryWhere, *searchMHost)
 	}
 
-	query = fmt.Sprintf("%s ORDER BY end_time ", query)
+	query := fmt.Sprintf("SELECT %s FROM %s.accounting WHERE %s ORDER BY end_time", querySelect, queryFrom, queryWhere)
 
 	if *debug {
 		log.Printf("Making query: %s", query)
@@ -536,18 +587,5 @@ func main() {
 
 	jobData := getJobData(query)
 
-	// This snippet could be made more abstract, but we only want one shortcut right now.
-	splitInfoEls := strings.Split(*infoEls, ",")
-	var newInfoEls []string
-	standardSet := []string{"fstime", "fetime", "hostname", "owner", "job_number", "task_number", "exit_status", "job_name"}
-
-	for _, el := range splitInfoEls {
-		if el != "stdset" {
-			newInfoEls = append(newInfoEls, el)
-		} else {
-			newInfoEls = append(newInfoEls, standardSet...)
-		}
-	}
-
-	printJobData(jobData, newInfoEls)
+	printJobData(jobData, displayInfoEls)
 }
