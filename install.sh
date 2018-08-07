@@ -24,6 +24,9 @@ check_for_go
 
 install_path="${INSTALL_PATH:-/shared/ucl/apps/cluster-bin}"
 
+echo "Changing into $(dirname -- "$0")..." >&2
+cd "$(dirname -- "$0")"
+
 echo "Making temporary GOPATH..." >&2
 export GOPATH
 GOPATH="$(mktemp -t -d tmp-go-path.XXXXXXXX)"
