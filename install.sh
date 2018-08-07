@@ -7,11 +7,17 @@ set -o errexit  \
 function check_for_go () {
     if [ -n "${GOROOT:-}" ] && which go >/dev/null 2>/dev/null; then
         echo "Found go compiler." >&2
+    elif [[ -f "/etc/profile.d/modules.sh" ]]; then
+        echo "No go compiler found, trying a module setup..." >&2
+        source /etc/profile.d/modules.sh
+        module purge
+        module load gcc-libs
+        module load compilers/go
     else
         echo "Could not get a go compiler, exiting..." >&2
         exit 1
     fi
-}    
+}
 
 echo "Checking go environment..." >&2
 check_for_go
