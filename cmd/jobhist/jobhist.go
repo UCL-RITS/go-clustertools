@@ -444,6 +444,7 @@ func getLocalClusterName() string {
 		"^(?:login0[12]|node-r99a-[0-9]{3})$":                     "grace",
 		"^(?:login0[56789]|node-[l-qs-z][0-9]{2}[a-f]-[0-9]{3})$": "legion",
 		"^(?:login0[34]|node-k98[a-t]-[0-9]{3})$":                 "thomas",
+		"^(?:login1[01]|node-k10[a-i]-0[0-3][0-9]|util11)$":       "michael",
 	}
 	for pattern, clusterName := range clusterMap {
 		if regexp.MustCompile(pattern).MatchString(hostname) {
@@ -461,7 +462,7 @@ var (
 	searchUser      = kingpin.Flag("user", "User to search for jobs from.").Short('u').PlaceHolder("<username>").Default(os.Getenv("USER")).String()
 	searchJob       = kingpin.Flag("job", "Job number to search for.").Short('j').PlaceHolder("<job number>").Default("-1").Int()
 	searchMHost     = kingpin.Flag("host", "Search for jobs that used a given node as the master.").Short('n').PlaceHolder("<hostname>").Default("(none)").String()
-	searchCluster   = kingpin.Flag("cluster", "Search jobs run in a given cluster (myriad|legion|grace|thomas)").Short('c').PlaceHolder("<cluster>").Default("auto").String()
+	searchCluster   = kingpin.Flag("cluster", "Search jobs run in a given cluster (myriad|legion|grace|thomas|michael)").Short('c').PlaceHolder("<cluster>").Default("auto").String()
 	showInfoEls     = kingpin.Flag("list-elements", "Show list of elements that can be displayed.").Short('l').Bool()
 	infoEls         = kingpin.Flag("info", "Show selected info (CSV list).").Short('i').Default("fstime,fetime,hostname,owner,job_number,task_number,exit_status,job_name").String()
 	// TODO: implement timeout
@@ -506,10 +507,11 @@ func main() {
 
 	// First the FROM:
 	clusterDBTables := map[string]string{
-		"myriad": "myriad_sgelogs",
-		"legion": "sgelogs2",
-		"grace":  "grace_sgelogs",
-		"thomas": "thomas_sgelogs",
+		"myriad":  "myriad_sgelogs",
+		"legion":  "sgelogs2",
+		"grace":   "grace_sgelogs",
+		"thomas":  "thomas_sgelogs",
+		"michael": "michael_sgelogs",
 	}
 
 	if *searchCluster == "auto" {
