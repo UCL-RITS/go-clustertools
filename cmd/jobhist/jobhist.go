@@ -55,21 +55,34 @@ func printJobData(rows []*accountingRow, elements []string) {
 	}
 
 	table.Render()
-
 }
 
 func dropUnsafeChars(r rune) rune {
-	if (r < 'a') || (r > 'z') {
-		if (r < '0') || (r > '9') {
-			if r != '-' {
-				if *debug {
-					log.Printf("unsafe character dropped: %v", r)
-				}
-				return -1
-			}
+	if (r >= 'a') && (r <= 'z') {
+		return r
+	}
+
+	if (r >= '0') && (r <= '9') {
+		return r
+	}
+
+	if r == '-' {
+		return r
+	}
+
+	if *debug {
+		log.Printf("unsafe character dropped: %v", r)
+	}
+	return -1
+}
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
 		}
 	}
-	return r
+	return false
 }
 
 func getLocalClusterName() string {
@@ -109,15 +122,6 @@ var (
 	commitLabel string
 	buildDate   string
 )
-
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
 
 func main() {
 
