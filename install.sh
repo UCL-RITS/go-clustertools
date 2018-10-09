@@ -42,7 +42,6 @@ else
 fi
 mkdir -p "$GOPATH/src/$dir_for_remote"
 ln -s "$(pwd)" "$GOPATH/src/$dir_for_remote/"
-echo "$GOPATH/src/$dir_for_remote"
 
 echo "Fetching dependencies..." >&2
 ./fetchdeps.sh
