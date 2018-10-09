@@ -24,12 +24,24 @@ check_for_go
 
 install_path="${INSTALL_PATH:-/shared/ucl/apps/cluster-bin}"
 
-echo "Changing into $(dirname -- "$0")..." >&2
+echo "Changing into \"$(dirname -- "$0")\"..." >&2
 cd "$(dirname -- "$0")"
 
 echo "Making temporary GOPATH..." >&2
 export GOPATH
 GOPATH="$(mktemp -t -d tmp-go-path.XXXXXXXX)"
+
+echo "Linking current directory to correct place in GOPATH..." >&2
+remote_url="$(git config --get remote.origin.url)"
+if [[ "${remote_url:0:4}" == "git@" ]]; then
+    remote_url="github.com/${remote_url#git@github.com:}"
+    dir_for_remote="${remote_url%/*}"
+else
+    remote_url="${remote_url##https://}"
+    dir_for_remote="${remote_url%/*}"
+fi
+mkdir -p "$GOPATH/src/$dir_for_remote"
+ln -s "$(pwd)" "$GOPATH/src/$dir_for_remote/"
 
 echo "Fetching dependencies..." >&2
 ./fetchdeps.sh
