@@ -8,4 +8,5 @@ else
   go get github.com/go-sql-driver/mysql
   go get github.com/olekukonko/tablewriter
   go get gopkg.in/alecthomas/kingpin.v2
+  go get github.com/Showmax/go-fqdn
 fi
