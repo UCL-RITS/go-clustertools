@@ -15,8 +15,8 @@ import (
 
 func getJobData(query string) []*accountingRow {
 	// Might need allowNativePasswords=True in future - need to look into it more
-	//con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.external.legion.ucl.ac.uk:3306)/?allowNativePasswords=True")
-	con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.external.legion.ucl.ac.uk:3306)/")
+	//con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.rc.ucl.ac.uk:3306)/?allowNativePasswords=True")
+	con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.rc.ucl.ac.uk:3306)/")
 	defer con.Close()
 
 	if err != nil {
