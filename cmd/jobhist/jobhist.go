@@ -3,12 +3,12 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/UCL-RITS/go-clustertools/internal/clusters"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/olekukonko/tablewriter"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"log"
 	"os"
-	"regexp"
 	"strings"
 	"unicode/utf8"
 )
@@ -85,29 +85,6 @@ func stringInSlice(a string, list []string) bool {
 	return false
 }
 
-func getLocalClusterName() string {
-	hostname, err := os.Hostname()
-	if err != nil {
-		log.Fatal(err)
-	}
-	hostname = strings.SplitN(hostname, ".", 2)[0] // Gets only the first segment of the hostname
-	clusterMap := map[string]string{
-		"^(?:login1[23]|node-[hij]00a-[0-9]{3})$":                 "myriad",
-		"^(?:login0[12]|node-r99a-[0-9]{3})$":                     "grace",
-		"^(?:login0[56789]|node-[l-qs-z][0-9]{2}[a-f]-[0-9]{3})$": "legion",
-		"^(?:login0[34]|node-k98[a-t]-[0-9]{3})$":                 "thomas",
-		"^(?:login1[01]|node-k10[a-i]-0[0-3][0-9]|util11)$":       "michael",
-	}
-	for pattern, clusterName := range clusterMap {
-		if regexp.MustCompile(pattern).MatchString(hostname) {
-			return clusterName
-		}
-	}
-	// TODO: proper error returns
-	log.Fatal("automatic cluster matching could not determine which cluster this is. Please specify on the command-line or panic wildly.")
-	return ""
-}
-
 var (
 	debug           = kingpin.Flag("debug", "Enable debug mode.").Bool()
 	searchBackHours = kingpin.Flag("hours", "Number of hours back in time to search.").Short('h').PlaceHolder("<hours>").Default("24").Int()
@@ -158,7 +135,11 @@ func main() {
 	}
 
 	if *searchCluster == "auto" {
-		*searchCluster = getLocalClusterName()
+		var err error
+		*searchCluster, err = clusters.GetLocalClusterName()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	searchDB := clusterDBTables[*searchCluster]
 	if searchDB == "unknown" {
