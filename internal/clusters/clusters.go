@@ -3,8 +3,6 @@ package clusters
 import (
 	"errors"
 	"io/ioutil"
-	"os"
-	"regexp"
 	"strings"
 )
 
@@ -22,21 +20,21 @@ var clusterAccountingDBs = map[string]string{
 // We used to use regexes to work out which cluster the current hostname was from,
 //  but since the namespace collapse of Legion from login{05..09} to login{01..02},
 //  hostname can no longer be reliably used to find cluster name.
-func GetClusterFromSGEIdent() (*Cluster, error) {
-	clusterName, err := ioutil.ReadFile("/opt/sge/default/common/cluster_name")
+func GetClusterNameFromSGEIdent() (string, error) {
+	clusterNameBytes, err := ioutil.ReadFile("/opt/sge/default/common/cluster_name")
 	if err != nil {
 		return "", err
 	}
 
 	// The ident file has a trailing newline
-	clusterName = strings.TrimSuffix(clusterName, "\n")
+	clusterName := strings.TrimSuffix(string(clusterNameBytes), "\n")
 
 	return clusterName, nil
 }
 
 // Wrapper function so that caller does not need to know what method is used.
 func GetLocalClusterName() (string, error) {
-	clusterName, err := GetClusterFromSGEIdent()
+	clusterName, err := GetClusterNameFromSGEIdent()
 	if err != nil {
 		return "", err
 	}
