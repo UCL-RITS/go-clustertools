@@ -23,7 +23,7 @@ var clusterAccountingDBs = map[string]string{
 func GetClusterNameFromSGEIdent() (string, error) {
 	clusterNameBytes, err := ioutil.ReadFile("/opt/sge/default/common/cluster_name")
 	if err != nil {
-		return "", err
+		return "", errors.New("could not get cluster name: " + err.Error())
 	}
 
 	// The ident file has a trailing newline
