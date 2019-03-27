@@ -2,59 +2,59 @@ package clusters
 
 import (
 	"errors"
+	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
 )
 
-type Cluster struct {
-	Name             string
-	AccountingDBName string
-	HostsRegex       string
-}
-
 // Old Legion is here for completeness and in case it needs to be queried.
-// In practice, it probably won't be used in jobhist, but might come up elsewhere.
-var clusters = &[]Cluster{
-	{"myriad", "myriad_sgelogs", "^(?:login1[23]|node-[hij]00a-[0-9]{3})$"},
-	{"legion", "sgelogs2", "^(?:login0[56789]|node-[l-qs-z][0-9]{2}[a-f]-[0-9]{3})$"},
-	{"grace", "grace_sgelogs", "^(?:login0[12]|node-r99a-[0-9]{3})$"},
-	{"thomas", "thomas_sgelogs", "^(?:login0[34]|node-k98[a-t]-[0-9]{3})$"},
-	{"michael", "michael_sgelogs", "^(?:login1[01]|node-k10[a-i]-0[0-3][0-9]|util11)$"},
-	{"old_legion", "sgelogs", "^$"},
+// In practice, it probably won't be used much.
+var clusterAccountingDBs = map[string]string{
+	"myriad":     "myriad_sgelogs",
+	"legion":     "sgelogs2",
+	"grace":      "grace_sgelogs",
+	"thomas":     "thomas_sgelogs",
+	"michael":    "michael_sgelogs",
+	"old_legion": "sgelogs",
 }
 
-func GetClusterFromHostname(hostname string) (*Cluster, error) {
-	for _, cluster := range *clusters {
-		if regexp.MustCompile(cluster.HostsRegex).MatchString(hostname) {
-			return &cluster, nil
-		}
-	}
-	return nil, errors.New("no matching cluster found for hostname " + hostname)
-}
-
-func GetLocalCluster() (*Cluster, error) {
-	var hostname string
-	var err error
-	var cluster *Cluster
-
-	hostname, err = os.Hostname()
+// We used to use regexes to work out which cluster the current hostname was from,
+//  but since the namespace collapse of Legion from login{05..09} to login{01..02},
+//  hostname can no longer be reliably used to find cluster name.
+func GetClusterFromSGEIdent() (*Cluster, error) {
+	clusterName, err := ioutil.ReadFile("/opt/sge/default/common/cluster_name")
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	hostname = strings.SplitN(hostname, ".", 2)[0]
-	cluster, err = GetClusterFromHostname(hostname)
-	if err != nil {
-		return nil, err
-	}
-	return cluster, nil
+	// The ident file has a trailing newline
+	clusterName = strings.TrimSuffix(clusterName, "\n")
+
+	return clusterName, nil
 }
 
+// Wrapper function so that caller does not need to know what method is used.
 func GetLocalClusterName() (string, error) {
-	cluster, err := GetLocalCluster()
+	clusterName, err := GetClusterFromSGEIdent()
 	if err != nil {
-		return "", nil
+		return "", err
 	}
-	return cluster.Name, nil
+	return clusterName, nil
+}
+
+func GetClusterAccountingDBName(clusterName string) (string, error) {
+	dbName, wasPresent := clusterAccountingDBs[clusterName]
+	if wasPresent == false {
+		return "", errors.New("No accounting DB for that cluster name")
+	}
+	return dbName, nil
+}
+
+func GetLocalClusterAccountingDBName() (string, error) {
+	clusterName, err := GetLocalClusterName()
+	if err != nil {
+		return "", err
+	}
+	return GetClusterAccountingDBName(clusterName)
 }
