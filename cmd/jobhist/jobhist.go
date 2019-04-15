@@ -102,7 +102,7 @@ var (
 
 func main() {
 
-	kingpin.Version(fmt.Sprintf("jobhist 0.0.1 commit %s built on %s", commitLabel, buildDate))
+	kingpin.Version(fmt.Sprintf("jobhist commit %s built on %s", commitLabel, buildDate))
 	kingpin.Parse()
 
 	if *showInfoEls != false {
