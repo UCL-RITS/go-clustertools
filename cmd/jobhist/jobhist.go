@@ -126,14 +126,6 @@ func main() {
 	// Build SQL Query
 
 	// First the FROM:
-	clusterDBTables := map[string]string{
-		"myriad":  "myriad_sgelogs",
-		"legion":  "sgelogs2",
-		"grace":   "grace_sgelogs",
-		"thomas":  "thomas_sgelogs",
-		"michael": "michael_sgelogs",
-	}
-
 	if *searchCluster == "auto" {
 		var err error
 		*searchCluster, err = clusters.GetLocalClusterName()
@@ -141,9 +133,9 @@ func main() {
 			log.Fatal(err)
 		}
 	}
-	searchDB := clusterDBTables[*searchCluster]
-	if searchDB == "unknown" {
-		log.Fatal("Error: there is no known database for this cluster.")
+	searchDB, err := clusters.GetClusterAccountingDBName(*searchCluster)
+	if err != nil {
+		log.Fatalf("Error: %s.", err)
 	}
 
 	queryFrom := searchDB
