@@ -21,7 +21,13 @@ function check_for_go () {
 echo "Checking go environment..." >&2
 check_for_go
 
-install_path="${INSTALL_PATH:-/shared/ucl/apps/cluster-bin}"
+if [[ -n "$TRAVIS" ]]; then
+    install_part_path="$(mktemp -d)"
+    install_path="$install_part_path/cluster-bin"
+    mkdir -p "$install_path"
+else
+    install_path="${INSTALL_PATH:-/shared/ucl/apps/cluster-bin}"
+fi
 
 echo "Changing into \"$(dirname -- "$0")\"..." >&2
 cd "$(dirname -- "$0")"
@@ -50,6 +56,10 @@ echo "Building..." >&2
 
 echo "Installing to: $install_path" >&2
 cp -vf bin/* "$install_path"/
+
+if [[ -n "$TRAVIS" ]]; then
+    tar -C "$install_path/.." -cJf "cluster-bin-${TRAVIS_COMMIT:-NO_COMMIT_LABEL}.tar.xz" "cluster-bin"
+fi
 
 echo "Deleting temporary GOPATH..." >&2
 rm -Irf "${GOPATH}"
