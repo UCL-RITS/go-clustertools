@@ -3,5 +3,7 @@ language: go
 go:
     - "1.12"
 services:
-      - mysql
+    - mysql
+env:
+    - INSTALL_PATH=$(mktemp -d)
 script: ./install.sh
