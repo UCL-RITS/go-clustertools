@@ -58,6 +58,7 @@ echo "Installing to: $install_path" >&2
 cp -vf bin/* "$install_path"/
 
 if [[ -n "$TRAVIS" ]]; then
+    echo "Making a tar file of binary artifacts... (Note: this is not currently pushed anywhere or deployed.)" >&2
     tar -C "$install_path/.." -cJf "cluster-bin-${TRAVIS_COMMIT:-NO_COMMIT_LABEL}.tar.xz" "cluster-bin"
 fi
 
