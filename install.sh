@@ -21,7 +21,7 @@ function check_for_go () {
 echo "Checking go environment..." >&2
 check_for_go
 
-if [[ -n "$TRAVIS" ]]; then
+if [[ -n "${TRAVIS:-}" ]]; then
     install_part_path="$(mktemp -d)"
     install_path="$install_part_path/cluster-bin"
     mkdir -p "$install_path"
@@ -57,7 +57,7 @@ echo "Building..." >&2
 echo "Installing to: $install_path" >&2
 cp -vf bin/* "$install_path"/
 
-if [[ -n "$TRAVIS" ]]; then
+if [[ -n "${TRAVIS:-}" ]]; then
     echo "Making a tar file of binary artifacts... (Note: this is not currently pushed anywhere or deployed.)" >&2
     tar -C "$install_path/.." -cJf "cluster-bin-${TRAVIS_COMMIT:-NO_COMMIT_LABEL}.tar.xz" "cluster-bin"
 fi
