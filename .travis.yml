@@ -4,6 +4,4 @@ go:
     - "1.12"
 services:
     - mysql
-env:
-    - INSTALL_PATH=$(mktemp -d)
 script: ./install.sh
