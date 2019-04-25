@@ -1,0 +1,7 @@
+dist: xenial
+language: go
+go:
+    - "1.12"
+services:
+      - mysql
+script: ./install.sh
