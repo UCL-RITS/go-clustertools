@@ -213,9 +213,13 @@ func main() {
 		conditions = append(conditions, fmt.Sprintf("hostname = \"%s\" ", *searchMHost))
 	}
 
-	queryWhere := strings.Join(conditions, " AND ")
+	if len(conditions) == 0 {
+		queryWhere := ""
+	} else {
+		queryWhere := " WHERE " + strings.Join(conditions, " AND ")
+	}
 
-	query := fmt.Sprintf("SELECT %s FROM %s.accounting WHERE %s ORDER BY end_time", querySelect, queryFrom, queryWhere)
+	query := fmt.Sprintf("SELECT %s FROM %s.accounting %s ORDER BY end_time", querySelect, queryFrom, queryWhere)
 
 	if *debug {
 		log.Printf("Making query: %s", query)
