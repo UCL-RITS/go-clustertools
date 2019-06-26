@@ -110,6 +110,10 @@ func main() {
 		os.Exit(0)
 	}
 
+	// Apply defaults where we need to know whether a value has been specified
+	if *searchUser == "" {
+	}
+
 	// This snippet could be made more abstract, but we only want one shortcut right now.
 	splitInfoEls := strings.Split(*infoEls, ",")
 	var displayInfoEls []string
@@ -177,7 +181,19 @@ func main() {
 		conditions = append(conditions, time_condition_composed)
 	}
 
+	// If no explicit user-to-search-for has been specified, and we're searching for a specific job ID,
+	//  assume any user is fine.
+	// (Otherwise we default to searching for the current user, below.)
+	if (*searchJob > 0) && (*searchUser == "") {
+		*searchUser = "*"
+	}
+
 	if *searchUser != "*" {
+		// Default to current user
+		if *searchUser == "" {
+			*searchUser = os.Getenv("USER")
+		}
+
 		// Check for username validity
 		if (utf8.RuneCountInString(*searchUser) != 7) ||
 			(len(strings.Map(dropUnsafeChars, *searchUser)) < len(*searchUser)) {
