@@ -141,6 +141,7 @@ func main() {
 	queryFrom := searchDB
 
 	// Next the SELECT:
+	// There's a bunch of extra derived fields we want to add here.
 
 	querySelect := "*, " +
 		"DATE_FORMAT(FROM_UNIXTIME(submission_time), \"%Y-%m-%d %T\") AS fsubtime," +
@@ -159,15 +160,22 @@ func main() {
 	}
 
 	// Finally the WHERE:
-	time_condition := " (" +
-		"        (end_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR)))) OR " +
-		"      (start_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR)))) OR " +
-		" (submission_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR))))" +
-		") "
-	queryWhere := fmt.Sprintf(time_condition,
-		(uint64)(*searchBackHours),
-		(uint64)(*searchBackHours),
-		(uint64)(*searchBackHours))
+	var conditions []string
+
+	// Searching for a specific job is fast enough and specific enough that we should
+	//  ignore the time bounds unless explicitly specified
+	if (*searchJob < 0) && (*searchBackHours == 24) {
+		time_condition := " (" +
+			"        (end_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR)))) OR " +
+			"      (start_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR)))) OR " +
+			" (submission_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR))))" +
+			") "
+		time_condition_composed := fmt.Sprintf(time_condition,
+			(uint64)(*searchBackHours),
+			(uint64)(*searchBackHours),
+			(uint64)(*searchBackHours))
+		conditions = append(conditions, time_condition_composed)
+	}
 
 	if *searchUser != "*" {
 		// Check for username validity
@@ -175,19 +183,21 @@ func main() {
 			(len(strings.Map(dropUnsafeChars, *searchUser)) < len(*searchUser)) {
 			log.Fatal("Error: Invalid username.")
 		}
-		queryWhere = fmt.Sprintf("%s AND owner = \"%s\" ", queryWhere, *searchUser)
+		conditions = append(conditions, fmt.Sprintf("owner = \"%s\" ", *searchUser))
 	}
 
 	if *searchJob > 0 {
-		queryWhere = fmt.Sprintf("%s AND job_number = %d ", queryWhere, *searchJob)
+		conditions = append(conditions, fmt.Sprintf("job_number = %d ", *searchJob))
 	}
 
 	if *searchMHost != "(none)" {
 		if len(strings.Map(dropUnsafeChars, *searchMHost)) < len(*searchMHost) {
 			log.Fatal("Error: Invalid hostname.")
 		}
-		queryWhere = fmt.Sprintf("%s AND hostname = \"%s\" ", queryWhere, *searchMHost)
+		conditions = append(conditions, fmt.Sprintf("hostname = \"%s\" ", *searchMHost))
 	}
+
+	queryWhere := strings.Join(conditions, " AND ")
 
 	query := fmt.Sprintf("SELECT %s FROM %s.accounting WHERE %s ORDER BY end_time", querySelect, queryFrom, queryWhere)
 
