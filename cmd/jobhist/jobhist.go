@@ -36,7 +36,11 @@ func getJobData(query string) []*accountingRow {
 
 func printJobData(rows []*accountingRow, elements []string) {
 	if len(rows) == 0 {
-		fmt.Printf("No entries found. (Last %d hours searched.)\n", *searchBackHours)
+		if *searchBackHours > -1 {
+			fmt.Printf("No entries found. (Last %d hours searched.)\n", *searchBackHours)
+		} else {
+			fmt.Printf("No entries found.\n")
+		}
 		return
 	}
 
@@ -87,8 +91,8 @@ func stringInSlice(a string, list []string) bool {
 
 var (
 	debug           = kingpin.Flag("debug", "Enable debug mode.").Bool()
-	searchBackHours = kingpin.Flag("hours", "Number of hours back in time to search.").Short('h').PlaceHolder("<hours>").Default("24").Int()
-	searchUser      = kingpin.Flag("user", "User to search for jobs from.").Short('u').PlaceHolder("<username>").Default(os.Getenv("USER")).String()
+	searchBackHours = kingpin.Flag("hours", "Number of hours back in time to search.").Short('h').PlaceHolder("<hours>").Default("-1").Int()
+	searchUser      = kingpin.Flag("user", "User to search for jobs from.").Short('u').PlaceHolder("<username>").Default("").String()
 	searchJob       = kingpin.Flag("job", "Job number to search for.").Short('j').PlaceHolder("<job number>").Default("-1").Int()
 	searchMHost     = kingpin.Flag("host", "Search for jobs that used a given node as the master.").Short('n').PlaceHolder("<hostname>").Default("(none)").String()
 	searchCluster   = kingpin.Flag("cluster", "Search jobs run in a given cluster (myriad|legion|grace|thomas|michael)").Short('c').PlaceHolder("<cluster>").Default("auto").String()
@@ -108,10 +112,6 @@ func main() {
 	if *showInfoEls != false {
 		showInfoElements()
 		os.Exit(0)
-	}
-
-	// Apply defaults where we need to know whether a value has been specified
-	if *searchUser == "" {
 	}
 
 	// This snippet could be made more abstract, but we only want one shortcut right now.
@@ -168,7 +168,10 @@ func main() {
 
 	// Searching for a specific job is fast enough and specific enough that we should
 	//  ignore the time bounds unless explicitly specified
-	if (*searchJob < 0) && (*searchBackHours == 24) {
+	if (*searchJob < 0) && (*searchBackHours == -1) {
+		*searchBackHours = 24
+	}
+	if *searchBackHours > -1 {
 		time_condition := " (" +
 			"        (end_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR)))) OR " +
 			"      (start_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR)))) OR " +
@@ -213,10 +216,10 @@ func main() {
 		conditions = append(conditions, fmt.Sprintf("hostname = \"%s\" ", *searchMHost))
 	}
 
-	if len(conditions) == 0 {
-		queryWhere := ""
-	} else {
-		queryWhere := " WHERE " + strings.Join(conditions, " AND ")
+	// We don't need a where clause if there are no conditions
+	queryWhere := ""
+	if len(conditions) > 0 {
+		queryWhere = " WHERE " + strings.Join(conditions, " AND ")
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM %s.accounting %s ORDER BY end_time", querySelect, queryFrom, queryWhere)
