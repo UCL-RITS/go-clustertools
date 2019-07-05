@@ -45,7 +45,9 @@ func printJobData(rows []*accountingRow, elements []string) {
 	}
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader(elements)
+	if *hideHeader == false {
+		table.SetHeader(elements)
+	}
 	table.SetBorder(false)
 
 	var rowBuffer []string
@@ -91,6 +93,7 @@ func stringInSlice(a string, list []string) bool {
 
 var (
 	debug           = kingpin.Flag("debug", "Enable debug mode.").Bool()
+	hideHeader      = kingpin.Flag("no-header", "Don't print the column headings.").Short('q').Default("false").Bool()
 	searchBackHours = kingpin.Flag("hours", "Number of hours back in time to search.").Short('h').PlaceHolder("<hours>").Default("-1").Int()
 	searchUser      = kingpin.Flag("user", "User to search for jobs from.").Short('u').PlaceHolder("<username>").Default("").String()
 	searchJob       = kingpin.Flag("job", "Job number to search for.").Short('j').PlaceHolder("<job number>").Default("-1").Int()
