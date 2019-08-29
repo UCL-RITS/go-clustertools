@@ -95,6 +95,7 @@ var (
 	debug           = kingpin.Flag("debug", "Enable debug mode.").Bool()
 	hideHeader      = kingpin.Flag("no-header", "Don't print the column headings.").Short('q').Default("false").Bool()
 	searchBackHours = kingpin.Flag("hours", "Number of hours back in time to search.").Short('h').PlaceHolder("<hours>").Default("-1").Int()
+	searchLast      = kingpin.Flag("last", "Search for the user's <num> previous jobs.").PlaceHolder("<num>").Default("-1").Int()
 	searchUser      = kingpin.Flag("user", "User to search for jobs from.").Short('u').PlaceHolder("<username>").Default("").String()
 	searchJob       = kingpin.Flag("job", "Job number to search for.").Short('j').PlaceHolder("<job number>").Default("-1").Int()
 	searchMHost     = kingpin.Flag("host", "Search for jobs that used a given node as the master.").Short('n').PlaceHolder("<hostname>").Default("(none)").String()
@@ -171,7 +172,8 @@ func main() {
 
 	// Searching for a specific job is fast enough and specific enough that we should
 	//  ignore the time bounds unless explicitly specified
-	if (*searchJob < 0) && (*searchBackHours == -1) {
+	// We also disable the default time limit if a specific number of jobs is searched for
+	if (*searchJob < 0) && (*searchBackHours == -1) && (*searchLast < 0) {
 		*searchBackHours = 24
 	}
 	if *searchBackHours > -1 {
@@ -226,6 +228,11 @@ func main() {
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM %s.accounting %s ORDER BY end_time", querySelect, queryFrom, queryWhere)
+	if *searchLast >= 0 {
+		// We need to flip the order to get only the last rows by end_time,
+		//   but then we want the order to be flipped *back* for display
+		query = fmt.Sprintf("SELECT * FROM (%s DESC LIMIT %d) AS t1 ORDER BY end_time", query, *searchLast)
+	}
 
 	if *debug {
 		log.Printf("Making query: %s", query)
