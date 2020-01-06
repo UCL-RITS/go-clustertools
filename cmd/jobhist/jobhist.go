@@ -99,7 +99,7 @@ var (
 	searchUser      = kingpin.Flag("user", "User to search for jobs from.").Short('u').PlaceHolder("<username>").Default("").String()
 	searchJob       = kingpin.Flag("job", "Job number to search for.").Short('j').PlaceHolder("<job number>").Default("-1").Int()
 	searchMHost     = kingpin.Flag("host", "Search for jobs that used a given node as the master.").Short('n').PlaceHolder("<hostname>").Default("(none)").String()
-	searchCluster   = kingpin.Flag("cluster", "Search jobs run in a given cluster (myriad|legion|grace|thomas|michael)").Short('c').PlaceHolder("<cluster>").Default("auto").String()
+	searchCluster   = kingpin.Flag("cluster", "Search jobs run in a given cluster (myriad|legion|grace|thomas|michael|kathleen)").Short('c').PlaceHolder("<cluster>").Default("auto").String()
 	showInfoEls     = kingpin.Flag("list-elements", "Show list of elements that can be displayed.").Short('l').Bool()
 	infoEls         = kingpin.Flag("info", "Show selected info (CSV list).").Short('i').Default("fstime,fetime,hostname,owner,job_number,task_number,exit_status,job_name").String()
 	// TODO: implement timeout
