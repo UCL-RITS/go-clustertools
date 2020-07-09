@@ -13,10 +13,14 @@ import (
 	"unicode/utf8"
 )
 
-func getJobData(query string) []*accountingRow {
+func getDBConn() (*sql.DB, error) {
 	// Might need allowNativePasswords=True in future - need to look into it more
 	//con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.rc.ucl.ac.uk:3306)/?allowNativePasswords=True")
-	con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.rc.ucl.ac.uk:3306)/")
+	return sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.rc.ucl.ac.uk:3306)/")
+}
+
+func getJobData(query string) []*accountingRow {
+	con, err := getDBConn()
 	defer con.Close()
 
 	if err != nil {
@@ -145,6 +149,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error: %s.", err)
 	}
+
+	warnAboutDBTime(searchDB)
 
 	queryFrom := searchDB
 
