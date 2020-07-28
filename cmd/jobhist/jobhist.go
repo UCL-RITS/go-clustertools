@@ -13,10 +13,12 @@ import (
 	"unicode/utf8"
 )
 
+var dbConnString = "ccspapp:U4Ah+fSt@tcp(mysql.rc.ucl.ac.uk:3306)/"
+
 func getDBConn() (*sql.DB, error) {
 	// Might need allowNativePasswords=True in future - need to look into it more
 	//con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.rc.ucl.ac.uk:3306)/?allowNativePasswords=True")
-	return sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.rc.ucl.ac.uk:3306)/")
+	return sql.Open("mysql", dbConnString)
 }
 
 func getJobData(query string) []*accountingRow {
