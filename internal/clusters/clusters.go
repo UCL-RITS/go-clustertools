@@ -15,6 +15,7 @@ var clusterAccountingDBs = map[string]string{
 	"thomas":   "thomas_sgelogs",
 	"michael":  "michael_sgelogs",
 	"kathleen": "kathleen_sgelogs",
+	"young":    "young_sgelogs", // I hate this
 	"legion1":  "sgelogs",
 	"legion2":  "sgelogs2",
 	"legion3":  "legion_sgelogs", // Currently a synonym for "legion"
