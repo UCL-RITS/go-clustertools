@@ -9,14 +9,15 @@ import (
 // Old Legion is here for completeness and in case it needs to be queried.
 // In practice, it probably won't be used much.
 var clusterAccountingDBs = map[string]string{
-	"myriad":  "myriad_sgelogs",
-	"legion":  "legion_sgelogs",
-	"grace":   "grace_sgelogs",
-	"thomas":  "thomas_sgelogs",
-	"michael": "michael_sgelogs",
-	"legion1": "sgelogs",
-	"legion2": "sgelogs2",
-	"legion3": "legion_sgelogs", // Currently a synonym for "legion"
+	"myriad":   "myriad_sgelogs",
+	"legion":   "legion_sgelogs",
+	"grace":    "grace_sgelogs",
+	"thomas":   "thomas_sgelogs",
+	"michael":  "michael_sgelogs",
+	"kathleen": "kathleen_sgelogs",
+	"legion1":  "sgelogs",
+	"legion2":  "sgelogs2",
+	"legion3":  "legion_sgelogs", // Currently a synonym for "legion"
 }
 
 // We used to use regexes to work out which cluster the current hostname was from,
@@ -46,7 +47,7 @@ func GetLocalClusterName() (string, error) {
 func GetClusterAccountingDBName(clusterName string) (string, error) {
 	dbName, wasPresent := clusterAccountingDBs[clusterName]
 	if wasPresent == false {
-		return "", errors.New("No accounting DB for that cluster name")
+		return "", errors.New("This cluster [" + clusterName + "] does not have a known associated accounting DB.")
 	}
 	return dbName, nil
 }

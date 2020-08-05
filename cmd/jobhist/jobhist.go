@@ -13,10 +13,16 @@ import (
 	"unicode/utf8"
 )
 
-func getJobData(query string) []*accountingRow {
+var dbConnString = "ccspapp:U4Ah+fSt@tcp(mysql.rc.ucl.ac.uk:3306)/"
+
+func getDBConn() (*sql.DB, error) {
 	// Might need allowNativePasswords=True in future - need to look into it more
 	//con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.rc.ucl.ac.uk:3306)/?allowNativePasswords=True")
-	con, err := sql.Open("mysql", "ccspapp:U4Ah+fSt@tcp(mysql.rc.ucl.ac.uk:3306)/")
+	return sql.Open("mysql", dbConnString)
+}
+
+func getJobData(query string) []*accountingRow {
+	con, err := getDBConn()
 	defer con.Close()
 
 	if err != nil {
@@ -99,7 +105,7 @@ var (
 	searchUser      = kingpin.Flag("user", "User to search for jobs from.").Short('u').PlaceHolder("<username>").Default("").String()
 	searchJob       = kingpin.Flag("job", "Job number to search for.").Short('j').PlaceHolder("<job number>").Default("-1").Int()
 	searchMHost     = kingpin.Flag("host", "Search for jobs that used a given node as the master.").Short('n').PlaceHolder("<hostname>").Default("(none)").String()
-	searchCluster   = kingpin.Flag("cluster", "Search jobs run in a given cluster (myriad|legion|grace|thomas|michael)").Short('c').PlaceHolder("<cluster>").Default("auto").String()
+	searchCluster   = kingpin.Flag("cluster", "Search jobs run in a given cluster (myriad|legion|grace|thomas|michael|kathleen)").Short('c').PlaceHolder("<cluster>").Default("auto").String()
 	showInfoEls     = kingpin.Flag("list-elements", "Show list of elements that can be displayed.").Short('l').Bool()
 	infoEls         = kingpin.Flag("info", "Show selected info (CSV list).").Short('i').Default("fstime,fetime,hostname,owner,job_number,task_number,exit_status,job_name").String()
 	// TODO: implement timeout
@@ -145,6 +151,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error: %s.", err)
 	}
+
+	warnAboutDBTime(searchDB)
 
 	queryFrom := searchDB
 
