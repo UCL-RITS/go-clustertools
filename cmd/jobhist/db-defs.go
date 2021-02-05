@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 )
 
 type accountingRow struct {
@@ -162,6 +163,15 @@ func accountingRowsAssign(rows *sql.Rows) []*accountingRow {
 	return rowArray
 }
 
+// Remove DNS suffix from hostname
+func unqdn(s string) string {
+	if i := strings.Index(s, "."); i < 0 {
+		return s
+	} else {
+		return s[0:i]
+	}
+}
+
 func getNamedElement(s *accountingRow, element string) string {
 	switch element {
 	case "id":
@@ -173,7 +183,7 @@ func getNamedElement(s *accountingRow, element string) string {
 	case "qname":
 		return s.qname
 	case "hostname":
-		return s.hostname
+		return unqdn(s.hostname)
 	case "ugroup":
 		return s.ugroup
 	case "owner":
