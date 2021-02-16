@@ -13,7 +13,7 @@ import (
 	"unicode/utf8"
 )
 
-var dbConnString = "ccspapp:U4Ah+fSt@tcp(mysql.rc.ucl.ac.uk:3306)/"
+var dbConnString = "ccspapp:U4Ah+fSt@tcp(db.rc.ucl.ac.uk:3306)/"
 
 func getDBConn() (*sql.DB, error) {
 	// Might need allowNativePasswords=True in future - need to look into it more
