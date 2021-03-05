@@ -183,7 +183,7 @@ func main() {
 	//  ignore the time bounds unless explicitly specified
 	// We also disable the default time limit if a specific number of jobs is searched for
 	if (*searchJob < 0) && (*searchBackHours == -1) && (*searchLast < 0) {
-		*searchBackHours = 24
+		*searchBackHours = 48
 	}
 	if (*searchBackHours > -1) || (*searchNoLimits) {
 		time_condition := " (" +
