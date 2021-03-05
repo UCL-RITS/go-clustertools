@@ -101,7 +101,7 @@ var (
 	debug           = kingpin.Flag("debug", "Enable debug mode.").Bool()
 	hideHeader      = kingpin.Flag("no-header", "Don't print the column headings.").Short('q').Default("false").Bool()
 	searchBackHours = kingpin.Flag("hours", "Number of hours back in time to search. (Default: 48)").Short('h').PlaceHolder("<hours>").Default("-1").Int()
-	searchLast      = kingpin.Flag("last", "Search for the user's <num> previous jobs. (Default: no limit)").PlaceHolder("<num>").Default("-1").Int()
+	searchLast      = kingpin.Flag("last", "Search for the user's <num> previous jobs. (Removes time limit.) (Default: no limit)").PlaceHolder("<num>").Default("-1").Int()
 	searchUser      = kingpin.Flag("user", "User to search for jobs from. ('*' -> any) (Default: yourself)").Short('u').PlaceHolder("<username>").Default("").String()
 	searchJob       = kingpin.Flag("job", "Single specific job number to search for.").Short('j').PlaceHolder("<job number>").Default("-1").Int()
 	searchMHost     = kingpin.Flag("host", "Search for jobs that used a given node as the master.").Short('n').PlaceHolder("<hostname>").Default("(none)").String()
