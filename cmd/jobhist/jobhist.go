@@ -185,7 +185,7 @@ func main() {
 	if (*searchJob < 0) && (*searchBackHours == -1) && (*searchLast < 0) {
 		*searchBackHours = 48
 	}
-	if (*searchBackHours > -1) || (*searchNoLimits) {
+	if (*searchBackHours > -1) && (!*searchNoLimits) {
 		time_condition := " (" +
 			"        (end_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR)))) OR " +
 			"      (start_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR)))) OR " +
