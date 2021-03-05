@@ -102,6 +102,7 @@ var (
 	hideHeader      = kingpin.Flag("no-header", "Don't print the column headings.").Short('q').Default("false").Bool()
 	searchBackHours = kingpin.Flag("hours", "Number of hours back in time to search. (Default: 48)").Short('h').PlaceHolder("<hours>").Default("-1").Int()
 	searchLast      = kingpin.Flag("last", "Search for the user's <num> previous jobs. (Removes time limit.) (Default: no limit)").PlaceHolder("<num>").Default("-1").Int()
+	searchNoLimits  = kingpin.Flag("all", "Do not limit results by time or number.").Short('a').Bool()
 	searchUser      = kingpin.Flag("user", "User to search for jobs from. ('*' -> any) (Default: yourself)").Short('u').PlaceHolder("<username>").Default("").String()
 	searchJob       = kingpin.Flag("job", "Single specific job number to search for.").Short('j').PlaceHolder("<job number>").Default("-1").Int()
 	searchMHost     = kingpin.Flag("host", "Search for jobs that used a given node as the master.").Short('n').PlaceHolder("<hostname>").Default("(none)").String()
@@ -184,7 +185,7 @@ func main() {
 	if (*searchJob < 0) && (*searchBackHours == -1) && (*searchLast < 0) {
 		*searchBackHours = 24
 	}
-	if *searchBackHours > -1 {
+	if (*searchBackHours > -1) || (*searchNoLimits) {
 		time_condition := " (" +
 			"        (end_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR)))) OR " +
 			"      (start_time > (UNIX_TIMESTAMP(SUBDATE(NOW(), INTERVAL %d HOUR)))) OR " +
@@ -236,7 +237,7 @@ func main() {
 	}
 
 	query := fmt.Sprintf("SELECT %s FROM %s.accounting %s ORDER BY end_time", querySelect, queryFrom, queryWhere)
-	if *searchLast >= 0 {
+	if (*searchLast >= 0) && (!*searchNoLimits) {
 		// We need to flip the order to get only the last rows by end_time,
 		//   but then we want the order to be flipped *back* for display
 		query = fmt.Sprintf("SELECT * FROM (%s DESC LIMIT %d) AS t1 ORDER BY end_time", query, *searchLast)
