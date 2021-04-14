@@ -27,6 +27,7 @@ func getMostRecentRowTime(clusterDB string) time.Time {
 	if err != nil {
 		log.Fatal(err)
 	}
+	resultRows.Close()
 
 	var maxTimestamp int
 	if maxEndTime > maxSubTime {
