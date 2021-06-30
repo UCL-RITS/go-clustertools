@@ -166,8 +166,9 @@ func main() {
 		"DATE_FORMAT(FROM_UNIXTIME(end_time), \"%Y-%m-%d %T\") AS fetime, " +
 		"end_time - start_time AS ewalltime, " +
 		"CAST(start_time AS SIGNED INTEGER) - CAST(submission_time AS SIGNED INTEGER) as waittime, " +
-		"(ru_utime + ru_stime) / (slots * (0.9+CAST(end_time AS SIGNED INTEGER) - CAST(start_time AS SIGNED INTEGER))) AS eff "
+		"(ru_utime + ru_stime) / (GREATEST(slots,1) * (0.9+CAST(end_time AS SIGNED INTEGER) - CAST(start_time AS SIGNED INTEGER))) AS eff "
 		// avoid div/0 errors by adding 0.9 -- works out that jobs taking less than a second take 0.9 seconds
+		// also avoid div/0 by using greatest(slots,1): if the shepherd fails, the job has slots = 0
 
 	// This element is expensive to retrieve, so we want to avoid calculating it if we don't need it
 	if stringInSlice("req_time", displayInfoEls) {
