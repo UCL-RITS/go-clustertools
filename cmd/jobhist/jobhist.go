@@ -82,6 +82,15 @@ func dropUnsafeChars(r rune) rune {
 		return r
 	}
 
+	// Some specials to allow SQL pattern matching
+	if (r == '*') || (r == '%') {
+		return '%'
+	}
+
+	if (r == '?') || (r == '_') {
+		return '_'
+	}
+
 	if *debug {
 		log.Printf("unsafe character dropped: %v", r)
 	}
@@ -103,9 +112,9 @@ var (
 	searchBackHours = kingpin.Flag("hours", "Number of hours back in time to search. (Default: 48)").Short('h').PlaceHolder("<hours>").Default("-1").Int()
 	searchLast      = kingpin.Flag("last", "Search for the user's <num> previous jobs. (Removes time limit.) (Default: no limit)").PlaceHolder("<num>").Default("-1").Int()
 	searchNoLimits  = kingpin.Flag("all", "Do not limit results by time or number.").Short('a').Bool()
-	searchUser      = kingpin.Flag("user", "User to search for jobs from. ('*' -> any) (Default: yourself)").Short('u').PlaceHolder("<username>").Default("").String()
+	searchUser      = kingpin.Flag("user", "User to search for jobs from. (Wildcards okay.) (Default: yourself)").Short('u').PlaceHolder("<username>").Default("").String()
 	searchJob       = kingpin.Flag("job", "Single specific job number to search for.").Short('j').PlaceHolder("<job number>").Default("-1").Int()
-	searchMHost     = kingpin.Flag("host", "Search for jobs that used a given node as the master.").Short('n').PlaceHolder("<hostname>").Default("(none)").String()
+	searchMHost     = kingpin.Flag("host", "Search for jobs that used a given node as the master. (Wildcards okay.)").Short('n').PlaceHolder("<hostname>").Default("(none)").String()
 	searchCluster   = kingpin.Flag("cluster", "Search jobs run in a given cluster (myriad|legion|grace|thomas|michael|kathleen) (Default: this cluster)").Short('c').PlaceHolder("<cluster>").Default("auto").String()
 	showInfoEls     = kingpin.Flag("list-elements", "Show list of elements that can be displayed.").Short('l').Bool()
 	infoEls         = kingpin.Flag("info", "Show selected info (CSV list).").Short('i').Default("fstime,fetime,hostname,owner,job_number,task_number,exit_status,job_name").String()
@@ -213,11 +222,17 @@ func main() {
 		}
 
 		// Check for username validity
-		if (utf8.RuneCountInString(*searchUser) != 7) ||
-			(len(strings.Map(dropUnsafeChars, *searchUser)) < len(*searchUser)) {
+		safeUser := strings.Map(dropUnsafeChars, *searchUser)
+		if (utf8.RuneCountInString(*searchUser) > 7) ||
+			(len(safeUser) < len(*searchUser)) {
 			log.Fatal("Error: Invalid username.")
 		}
-		conditions = append(conditions, fmt.Sprintf("owner = \"%s\" ", *searchUser))
+		// Note: _ is the single-character wildcard in SQL
+		if strings.ContainsAny(safeUser, "%_") {
+			conditions = append(conditions, fmt.Sprintf("owner LIKE \"%s\" ", safeUser))
+		} else {
+			conditions = append(conditions, fmt.Sprintf("owner = \"%s\" ", safeUser))
+		}
 	}
 
 	if *searchJob > 0 {
@@ -225,10 +240,16 @@ func main() {
 	}
 
 	if *searchMHost != "(none)" {
-		if len(strings.Map(dropUnsafeChars, *searchMHost)) < len(*searchMHost) {
+		safeHost := strings.Map(dropUnsafeChars, *searchMHost)
+		if len(safeHost) < len(*searchMHost) {
 			log.Fatal("Error: Invalid hostname.")
 		}
-		conditions = append(conditions, fmt.Sprintf("hostname = \"%s\" ", *searchMHost))
+		// Note: _ is the single-character wildcard in SQL
+		if strings.ContainsAny(safeHost, "%_") {
+			conditions = append(conditions, fmt.Sprintf("hostname LIKE \"%s\" ", safeHost))
+		} else {
+			conditions = append(conditions, fmt.Sprintf("hostname = \"%s\" ", safeHost))
+		}
 	}
 
 	// We don't need a where clause if there are no conditions
