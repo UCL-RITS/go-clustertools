@@ -21,48 +21,29 @@ function check_for_go () {
 echo "Checking go environment..." >&2
 check_for_go
 
-if [[ -n "${TRAVIS:-}" ]]; then
-    install_part_path="$(mktemp -d)"
-    install_path="$install_part_path/cluster-bin"
-    mkdir -p "$install_path"
-else
-    install_path="${INSTALL_PATH:-/shared/ucl/apps/cluster-bin}"
-fi
-
 echo "Changing into \"$(dirname -- "$0")\"..." >&2
 cd "$(dirname -- "$0")"
 
-echo "Making temporary GOPATH..." >&2
-export GOPATH
-GOPATH="$(mktemp -t -d tmp-go-path.XXXXXXXX)"
-
-echo "Linking current directory to correct place in GOPATH..." >&2
-remote_url="$(git config --get remote.origin.url)"
-if [[ "${remote_url:0:4}" == "git@" ]]; then
-    remote_url="github.com/${remote_url#git@github.com:}"
-    dir_for_remote="${remote_url%/*}"
-else
-    remote_url="${remote_url##https://}"
-    dir_for_remote="${remote_url%/*}"
+if [[ ! -r go.sum ]]; then
+    if [[ ! -r go.mod ]]; then
+        echo "Could not find go.mod file, regenerating..." >&2
+        module_path="$(git config --get remote.origin.url)"
+        module_path="${module_path#git@}"
+        module_path="${module_path#https://}"
+        module_path="${module_path/://}"
+        module_path="${module_path%.git}"
+        go mod init "$module_path"
+        go mod tidy
+    fi
+    echo "Could not find go.sum file, regenerating..." >&2
+    go mod download all
 fi
-mkdir -p "$GOPATH/src/$dir_for_remote"
-ln -s "$(pwd)" "$GOPATH/src/$dir_for_remote/"
-
-echo "Fetching dependencies..." >&2
-./fetchdeps.sh
 
 echo "Building..." >&2
 ./build.sh
 
+install_path="${INSTALL_PATH:-/shared/ucl/apps/cluster-bin}"
 echo "Installing to: $install_path" >&2
 cp -vf bin/* "$install_path"/
-
-if [[ -n "${TRAVIS:-}" ]]; then
-    echo "Making a tar file of binary artifacts... (Note: this is not currently pushed anywhere or deployed.)" >&2
-    tar -C "$install_path/.." -cJf "cluster-bin-${TRAVIS_COMMIT:-NO_COMMIT_LABEL}.tar.xz" "cluster-bin"
-fi
-
-echo "Deleting temporary GOPATH..." >&2
-rm -Irf "${GOPATH}"
 
 echo "Done." >&2
