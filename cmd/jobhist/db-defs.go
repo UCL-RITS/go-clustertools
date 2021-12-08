@@ -71,10 +71,13 @@ type accountingRow struct {
 	fsubtime       string  //, 'Formatted submission time',
 	fstime         string  //, 'Formatted start time',
 	fetime         string  //, 'Formatted end time',
+	slowdown       float64 //, '(Bad) slowdown metric',
 	ewalltime      int     //, 'Elapsed walltime',
 	waittime       int     //, 'Time between submission and starting',
 	cpu_efficiency float64 //, 'Experimental efficiency calculation',
-	req_time       int     //, 'Requested job time',
+	req_time       int     //, 'Requested job time (stored)',
+	req_time_calc  int     //, 'Requested job time (extracted from the category field)',
+	req_slowdown   float64 //, 'Slowdown metric using requested time (stored) instead of run time',
 }
 
 func accountingRowsAssign(rows *sql.Rows) []*accountingRow {
@@ -145,10 +148,13 @@ func accountingRowsAssign(rows *sql.Rows) []*accountingRow {
 			&s.fsubtime,
 			&s.fstime,
 			&s.fetime,
+			&s.slowdown,
 			&s.ewalltime,
 			&s.waittime,
 			&s.cpu_efficiency,
 			&s.req_time,
+			&s.req_time_calc,
+			&s.req_slowdown,
 		)
 		if err != nil {
 			log.Println(err)
@@ -300,12 +306,18 @@ func getNamedElement(s *accountingRow, element string) string {
 		return s.fstime
 	case "fetime":
 		return s.fetime
+	case "slowdown":
+		return strconv.FormatFloat(s.slowdown, 'f', 1, 32)
 	case "ewalltime":
 		return strconv.Itoa(s.ewalltime)
 	case "waittime":
 		return strconv.Itoa(s.waittime)
 	case "req_time":
 		return strconv.Itoa(s.req_time)
+	case "req_time_calc":
+		return strconv.Itoa(s.req_time_calc)
+	case "req_slowdown":
+		return strconv.FormatFloat(s.req_slowdown, 'f', 1, 32)
 	case "cpu_efficiency":
 		return strconv.FormatFloat(s.cpu_efficiency, 'f', 9, 32)
 	default:
@@ -374,9 +386,13 @@ func showInfoElements() {
 	fsubtime,
 	fstime,
 	fetime,
+	slowdown,
+	req_slowdown,
 	ewalltime,
 	waittime,
 	cpu_efficiency, # Experimental!
 	req_time,
+	req_time_calc,
+	req_slowdown,
 	stdset # (shortcut for default group)`)
 }

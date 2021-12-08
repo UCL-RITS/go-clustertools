@@ -116,6 +116,7 @@ var (
 	searchJob       = kingpin.Flag("job", "Single specific job number to search for.").Short('j').PlaceHolder("<job number>").Default("-1").Int()
 	searchMHost     = kingpin.Flag("host", "Search for jobs that used a given node as the master. (Wildcards okay.)").Short('n').PlaceHolder("<hostname>").Default("(none)").String()
 	searchCluster   = kingpin.Flag("cluster", "Search jobs run in a given cluster (myriad|legion|grace|thomas|michael|kathleen) (Default: this cluster)").Short('c').PlaceHolder("<cluster>").Default("auto").String()
+	searchArbQuery  = kingpin.Flag("query", "Arbitrary query WHERE clause to include.").Short('Q').PlaceHolder("<query>").Hidden().Default("").String()
 	showInfoEls     = kingpin.Flag("list-elements", "Show list of elements that can be displayed.").Short('l').Bool()
 	infoEls         = kingpin.Flag("info", "Show selected info (CSV list).").Short('i').Default("fstime,fetime,hostname,owner,job_number,task_number,exit_status,job_name").String()
 	// TODO: implement timeout
@@ -173,17 +174,32 @@ func main() {
 		"DATE_FORMAT(FROM_UNIXTIME(submission_time), \"%Y-%m-%d %T\") AS fsubtime," +
 		"DATE_FORMAT(FROM_UNIXTIME(start_time), \"%Y-%m-%d %T\") AS fstime, " +
 		"DATE_FORMAT(FROM_UNIXTIME(end_time), \"%Y-%m-%d %T\") AS fetime, " +
+		// This line is really defensive because: start_time and end_time can both be zero for a failed job, and stupid unsigned arithmetic won't let the numbers be negative
+		"(greatest((`accounting`.`end_time` - least(`accounting`.`submission_time`,`accounting`.`start_time`)),1) / greatest((`accounting`.`end_time` - `accounting`.`start_time`),1)) AS slowdown, " +
 		"end_time - start_time AS ewalltime, " +
 		"CAST(start_time AS SIGNED INTEGER) - CAST(submission_time AS SIGNED INTEGER) as waittime, " +
-		"(ru_utime + ru_stime) / (GREATEST(slots,1) * (0.9+CAST(end_time AS SIGNED INTEGER) - CAST(start_time AS SIGNED INTEGER))) AS eff "
+		"(ru_utime + ru_stime) / (GREATEST(slots,1) * (0.9+CAST(end_time AS SIGNED INTEGER) - CAST(start_time AS SIGNED INTEGER))) AS eff, " +
 		// avoid div/0 errors by adding 0.9 -- works out that jobs taking less than a second take 0.9 seconds
 		// also avoid div/0 by using greatest(slots,1): if the shepherd fails, the job has slots = 0
 
-	// This element is expensive to retrieve, so we want to avoid calculating it if we don't need it
-	if stringInSlice("req_time", displayInfoEls) {
-		querySelect += ", substr(`accounting`.`category`,(locate('h_rt=',`accounting`.`category`) + 5),(locate(',',substr(`accounting`.`category`,(locate('h_rt=',`accounting`.`category`) + 5))) - 1)) AS `req_time`"
+		"`C::l::h_rt` AS `req_time` "
+		// ^-- warning: this field only started being generated in 2019 and is "null" (text -_-) for earlier rows
+
+	// These elements are expensive to retrieve, so we want to avoid calculating them if we don't need them
+	if stringInSlice("req_time_calc", displayInfoEls) {
+		querySelect += ", substr(`accounting`.`category`,(locate('h_rt=',`accounting`.`category`) + 5),(locate(',',substr(`accounting`.`category`,(locate('h_rt=',`accounting`.`category`) + 5))) - 1)) AS `req_time_calc`"
 	} else {
-		querySelect += ", 0 as `req_time`"
+		querySelect += ", 0 as `req_time_calc`"
+	}
+	if stringInSlice("req_slowdown", displayInfoEls) {
+		querySelect += ", "
+		querySelect += "CASE "
+		querySelect += " WHEN `end_time` = 0 OR `start_time` = 0 OR `C::l::h_rt` = \"null\" THEN NULL "
+		querySelect += " ELSE (((`start_time` - `submission_time`) + (CAST(`C::l::h_rt` AS INTEGER))) / GREATEST(CAST(`C::l::h_rt` AS INTEGER), 1)) "
+		querySelect += "END "
+		querySelect += " AS `req_slowdown`"
+	} else {
+		querySelect += ", 0 as `req_slowdown`"
 	}
 
 	// Finally the WHERE:
@@ -250,6 +266,11 @@ func main() {
 		} else {
 			conditions = append(conditions, fmt.Sprintf("hostname = \"%s\" ", safeHost))
 		}
+	}
+
+	if *searchArbQuery != "" {
+		// Danger
+		conditions = append(conditions, fmt.Sprintf(" %s ", *searchArbQuery))
 	}
 
 	// We don't need a where clause if there are no conditions
