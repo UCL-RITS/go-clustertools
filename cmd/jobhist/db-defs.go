@@ -68,16 +68,16 @@ type accountingRow struct {
 	C__l__penalty      float64       //,
 	C__l__threads      int           //,
 	// ^-- db columns, v-- statement-calculated values
-	fsubtime       string  //, 'Formatted submission time',
-	fstime         string  //, 'Formatted start time',
-	fetime         string  //, 'Formatted end time',
-	slowdown       float64 //, '(Bad) slowdown metric',
-	ewalltime      int     //, 'Elapsed walltime',
-	waittime       int     //, 'Time between submission and starting',
-	cpu_efficiency float64 //, 'Experimental efficiency calculation',
-	req_time       int     //, 'Requested job time (stored)',
-	req_time_calc  int     //, 'Requested job time (extracted from the category field)',
-	req_slowdown   float64 //, 'Slowdown metric using requested time (stored) instead of run time',
+	fsubtime       string          //, 'Formatted submission time',
+	fstime         string          //, 'Formatted start time',
+	fetime         string          //, 'Formatted end time',
+	slowdown       float64         //, '(Bad) slowdown metric',
+	ewalltime      int             //, 'Elapsed walltime',
+	waittime       int             //, 'Time between submission and starting',
+	cpu_efficiency float64         //, 'Experimental efficiency calculation',
+	req_time       string          //, 'Requested job time (stored) -- this is a string because someone made a mess in the past :(',
+	req_time_calc  int             //, 'Requested job time (extracted from the category field)',
+	req_slowdown   sql.NullFloat64 //, 'Slowdown metric using requested time (stored) instead of run time. A special type because some rows have invalid req_time data.',
 }
 
 func accountingRowsAssign(rows *sql.Rows) []*accountingRow {
@@ -313,11 +313,15 @@ func getNamedElement(s *accountingRow, element string) string {
 	case "waittime":
 		return strconv.Itoa(s.waittime)
 	case "req_time":
-		return strconv.Itoa(s.req_time)
+		return s.req_time
 	case "req_time_calc":
 		return strconv.Itoa(s.req_time_calc)
 	case "req_slowdown":
-		return strconv.FormatFloat(s.req_slowdown, 'f', 1, 32)
+		if s.req_slowdown.Valid == true {
+			return strconv.FormatFloat(s.req_slowdown.Float64, 'f', 1, 32)
+		} else {
+			return "(null)"
+		}
 	case "cpu_efficiency":
 		return strconv.FormatFloat(s.cpu_efficiency, 'f', 9, 32)
 	default:
@@ -326,73 +330,86 @@ func getNamedElement(s *accountingRow, element string) string {
 
 }
 
+type elementDesc struct {
+	Label       string
+	Description string
+}
+
 func showInfoElements() {
-	fmt.Println(`Possible info elements:
-	qname,
-	hostname,
-	ugroup,
-	owner,
-	job_name,
-	job_number,
-	account,
-	priority,
-	submission_time,
-	start_time,
-	end_time,
-	failed,
-	exit_status,
-	ru_wallclock,
-	ru_utime,
-	ru_stime,
-	ru_maxrss,
-	ru_ixrss,
-	ru_ismrss,
-	ru_idrss,
-	ru_isrss,
-	ru_minflt,
-	ru_majflt,
-	ru_nswap,
-	ru_inblock,
-	ru_oublock,
-	ru_msgsnd,
-	ru_msgrcv,
-	ru_nsignals,
-	ru_nvcsw,
-	ru_nivcsw,
-	project,
-	department,
-	granted_pe,
-	slots,
-	task_number,
-	cpu,
-	mem,
-	io,
-	category,
-	iow,
-	pe_taskid,
-	maxvmem,
-	arid,
-	ar_submission_time,
-	cost,
-	C__l__bonus,
-	C__l__cpu,
-	C__l__gpu,
-	C__l__h_rss,
-	C__l__h_rt,
-	C__l__h_vmem,
-	C__l__memory,
-	C__l__penalty,
-	C__l__threads,
-	fsubtime,
-	fstime,
-	fetime,
-	slowdown,
-	req_slowdown,
-	ewalltime,
-	waittime,
-	cpu_efficiency, # Experimental!
-	req_time,
-	req_time_calc,
-	req_slowdown,
-	stdset # (shortcut for default group)`)
+	elementDescriptions := []elementDesc{
+		{"qname", "the name of the internal queue this job used"},
+		{"hostname", "the hostname of the master node this job ran on"},
+		{"ugroup", "the effective group id of the job owner"},
+		{"owner", "the user who owns the job"},
+		{"job_name", "the name of the job in the scheduler"},
+		{"job_number", "the job ID"},
+		{"account", "a string used to calculate Gold spending"},
+		{"priority", "priority value assigned to the job, by the queue"},
+		{"submission_time", "the time the job was submitted, in seconds since the UNIX epoch"},
+		{"start_time", "the time the job started, in seconds since the UNIX epoch (0 if failed to start)"},
+		{"end_time", "the time the job ended, in seconds since the UNIX epoch (0 if failed to start)"},
+		{"failed", "a numeric error code indicated whether and why a job failed at the scheduler level"},
+		{"exit_status", "the exit status of the job, or an additional error code from the scheduler in case of failure"},
+		{"ewalltime", "elapsed time for the job"},
+		// I don't trust the ru_ ones to mean anything sensible
+		// {"ru_wallclock", ""},
+		// {"ru_utime,", ""},
+		// {"ru_stime,", ""},
+		// {"ru_maxrss,", ""},
+		// {"ru_ixrss,", ""},
+		// {"ru_ismrss,", ""},
+		// {"ru_idrss,", ""},
+		// {"ru_isrss,", ""},
+		// {"ru_minflt,", ""},
+		// {"ru_majflt,", ""},
+		// {"ru_nswap,", ""},
+		// {"ru_inblock,", ""},
+		// {"ru_oublock,", ""},
+		// {"ru_msgsnd,", ""},
+		// {"ru_msgrcv,", ""},
+		// {"ru_nsignals,", ""},
+		// {"ru_nvcsw,", ""},
+		// {"ru_nivcsw,", ""},
+		{"slots", "'slots' granted to the job by the scheduler"},
+		{"cost", "number of cores blocked out by the job (virtual cores on clusters with hyperthreading)"},
+		{"task_number", "the task ID, for array jobs"},
+		// I don't trust the cpu, mem, or io ones either
+		// {"cpu", ""},
+		// {"mem", ""},
+		// {"io", ""},
+		// {"iow", ""},
+		// {"maxvmem", ""},
+		{"category", "some stuck-together info about the job"},
+		// Then there's some other stuff which doesn't apply to any of our jobs
+		// {"pe_taskid", "this would only be populated if we had the accounting_summary setting turned off in the scheduler. See `man accounting`."},
+		// {"arid", "advanced reservation ID. We never use these."},
+		// {"ar_submission_time", "advanced reservation submission time. We never use these."},
+		// And then the subset of category break-outs that actually seem useful
+		{"C__l__threads", "whether the job requested use of all hyperthreaded cores"},
+		{"C__l__gpu", "number of GPUs requested"},
+		{"C__l__memory", "RAM per core requested"},
+		// And the ones that don't
+		// {"C__l__bonus", "Don't know"},
+		// {"C__l__cpu", "Don't know"},
+		// {"C__l__h_rt", "The same as req_time"},
+		// {"C__l__penalty", "Don't know"},
+		// {"C__l__h_rss", "A memory resource request I don't think we use"},
+		// {"C__l__h_vmem", "Ditto"},
+		// And then some add-ons, calculated rather than stored (except req_time, which used to be calculated)
+		{"fsubtime", "submission time, converted into readable format"},
+		{"fstime", "start time, converted into readable format"},
+		{"fetime", "end time, converted into readable format"},
+		{"waittime", "how long the job spent waiting (0 if failed to start)"},
+		{"cpu_efficiency", "experimental: number of CPU processing seconds divided by elapsed walltime"},
+		{"req_time", "maximum walltime requested by job"},
+		{"req_time_calc", "maximum walltime requested by job (calculated, for jobs before this was stored)"},
+		{"slowdown", "wait time + run time / run_time"},
+		{"req_slowdown", "slowdown, calculated from time requested rather than run time"},
+		{"stdset", "a shortcut for the default set of printed fields"},
+	}
+
+	fmt.Println(`Possible info elements:`)
+	for _, v := range elementDescriptions {
+		fmt.Printf("  %15s     %s\n", v.Label, v.Description)
+	}
 }
