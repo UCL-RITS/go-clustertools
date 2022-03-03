@@ -121,7 +121,7 @@ func parseConfig(file string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not read config file: %w", err)
 	}
-	err = yaml.Unmarshal(configBytes, &c)
+	err = yaml.UnmarshalStrict(configBytes, &c)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse YAML from config file: %w", err)
 	}
