@@ -15,7 +15,7 @@ func GetTextListMembers(name string) ([]string, error) {
 
 func SetTextListMembers(name string, list []string) error {
 	outputString := strings.Join(list, "\n") + "\n"
-	err := os.WriteFile(name, []byte(outputString), 0500)
+	err := os.WriteFile(name, []byte(outputString), 0600)
 	if err != nil {
 		return err
 	}
