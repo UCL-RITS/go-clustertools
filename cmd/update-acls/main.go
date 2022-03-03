@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"strings"
 )
 
 var configFile string
@@ -24,6 +25,17 @@ func main() {
 		log.Fatalln(fmt.Errorf("could not parse config file: %w", err))
 	}
 
+	if len(config.Lists) == 0 {
+		log.Fatalln("no list configurations were found in the config")
+	}
+
+	if showLists {
+		log.Println("read list configs:")
+		for _, v := range config.Lists {
+			log.Printf("%s: %s\n", v.Name, v.Description)
+		}
+	}
+
 	// Expansion step: expand lists of sources into a list of users
 	lists, errs := config.ExpandAEULists()
 
@@ -40,7 +52,7 @@ func main() {
 
 	if showLists {
 		for _, v := range lists {
-			fmt.Printf("%s: %+v\n", v.Name, v.BuiltList)
+			log.Printf("expanded %s to: %s\n", v.Name, strings.Join(v.BuiltList, ","))
 		}
 	}
 
