@@ -23,8 +23,14 @@ func (c *Config) ExpandAEULists() ([]AEUList, []error) {
 			continue
 		}
 		inclList, inclErrs := c.expandListSpec(v.Include)
-		exclList, exclErrs := c.expandListSpec(v.Exclude)
-		inclList.DifferenceUpdate(exclList)
+
+		exclList := stringsets.New()
+		exclErrs := []error{}
+		if v.Exclude != nil {
+			exclList, exclErrs = c.expandListSpec(v.Exclude)
+			inclList.DifferenceUpdate(exclList)
+		}
+
 		v.BuiltList = inclList.AsSlice()
 		results = append(results, v)
 		errs = append(errs, inclErrs...)
