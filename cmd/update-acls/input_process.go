@@ -35,7 +35,12 @@ func (c *Config) ExpandAEULists() ([]AEUList, []error) {
 }
 
 func (c *Config) expandListSpec(spec *ListSpec) (*stringsets.StringSet, []error) {
-	set := stringsets.NewFromSlice(spec.Users)
+	var set *stringsets.StringSet
+	if spec.Users != nil {
+		set = stringsets.NewFromSlice(spec.Users)
+	} else {
+		set = stringsets.New()
+	}
 
 	// It would probably be possible to make these group functions a modular interface but I'm
 	//  not up to it right now.
