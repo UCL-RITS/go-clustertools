@@ -22,19 +22,27 @@ func (c *Config) ExpandAEULists() ([]AEUList, []error) {
 			v.BuiltList = []string{}
 			continue
 		}
-		inclList, inclErrs := c.expandListSpec(v.Include)
+		inclSet, inclErrs := c.expandListSpec(v.Include)
 
-		exclList := stringsets.New()
+		exclSet := stringsets.New()
 		exclErrs := []error{}
 		if v.Exclude != nil {
-			exclList, exclErrs = c.expandListSpec(v.Exclude)
-			inclList.DifferenceUpdate(exclList)
+			exclSet, exclErrs = c.expandListSpec(v.Exclude)
+			inclSet.DifferenceUpdate(exclSet)
 		}
 
-		v.BuiltList = inclList.AsSlice()
+		filtSet := stringsets.New()
+		filtErrs := []error{}
+		if v.Filter != nil {
+			filtSet, filtErrs = c.expandListSpec(v.Filter)
+			inclSet.IntersectionUpdate(filtSet)
+		}
+
+		v.BuiltList = inclSet.AsSlice()
 		results = append(results, v)
 		errs = append(errs, inclErrs...)
 		errs = append(errs, exclErrs...)
+		errs = append(errs, filtErrs...)
 	}
 
 	return results, errs

@@ -35,6 +35,7 @@ type AEUList struct {
 	Description  string           `yaml:"description`
 	Include      *ListSpec        `yaml:"include"`
 	Exclude      *ListSpec        `yaml:"exclude"`
+	Filter       *ListSpec        `yaml:"filter"` // The idea of this is that you take (include), remove (exclude), and then intersect the result with (filter).
 	Destinations *DestinationList `yaml:"destinations"`
-	BuiltList    []string         `yaml:"-"` // This is where we actually stash the results of expansion. It doesn't get read or written during YAML parsing.
+	BuiltList    []string         `yaml:"-"` // This is a place to stash the results of expansion. It doesn't get read or written during YAML parsing.
 }
