@@ -17,10 +17,21 @@ And change:
  - Gold projects (via `gchproject`)
  - Sun Grid Engine ACLs (via `qconf`)
 
-## Configuration
 
-Configuration will be read by default from a file in `./update-acls.conf` but an alternative file can
-be specified on the command-line.
+## CLI
+
+```
+$ ./update-acls -h
+Usage of ./update-acls:
+  -config string
+    	path to config file (default "./update-acls.conf")
+  -no-targets
+    	skip the output phase, only expand lists
+  -show-lists
+    	print the built lists after expansion
+```
+
+## Configuration
 
 The configuration is specified in YAML and looks something like this:
 
@@ -53,6 +64,10 @@ Text files are expected to be new-line-separated.
 Order of the sections is not important but the sections cannot occur more than once in a single list entry.
 
 No error will occur if your AD/LDAP options are incorrect or missing if you don't specify any AD groups to include. (i.e. the only checks are made when queries are made.)
+
+If any errors are detected during list expansion, no changes will be made to any destination.
+
+All lists are expanded before any changes are made.
 
 ## List Expansion
 
