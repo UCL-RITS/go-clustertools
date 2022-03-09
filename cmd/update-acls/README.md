@@ -35,7 +35,7 @@ Usage of ./update-acls:
 
 The configuration is specified in YAML and looks something like this:
 
-```
+```yaml
 ad_options:
     server_url: "ldaps://ad.ucl.ac.uk"
     bind_username: "AD\\sa-roleuser01"
@@ -72,7 +72,7 @@ All lists are expanded before any changes are made.
 ## List Expansion
 
 The list of users is made from expanding all the `include` entries, removing all the `exclude` entries, then removing all entries that aren't in `filter`. 
-So, this example:
+So, the example above:
 
  - expands the AD groups `economics-all` and `rescfserv-all` into a list of users
  - expands the UNIX group `ccsprcop` into a list of users and adds that
