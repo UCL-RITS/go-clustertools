@@ -10,9 +10,9 @@ import (
 	"unicode/utf8"
 
 	"github.com/UCL-RITS/go-clustertools/internal/clusters"
+	"github.com/alecthomas/kingpin/v2"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/olekukonko/tablewriter"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var dbConnString = "ccspapp:U4Ah+fSt@tcp(db.rc.ucl.ac.uk:3306)/"
