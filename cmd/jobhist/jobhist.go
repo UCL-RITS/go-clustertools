@@ -3,14 +3,16 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/UCL-RITS/go-clustertools/internal/clusters"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/olekukonko/tablewriter"
-	"gopkg.in/alecthomas/kingpin.v2"
 	"log"
 	"os"
 	"strings"
+	"time"
 	"unicode/utf8"
+
+	"github.com/UCL-RITS/go-clustertools/internal/clusters"
+	"github.com/alecthomas/kingpin/v2"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/olekukonko/tablewriter"
 )
 
 var dbConnString = "ccspapp:U4Ah+fSt@tcp(db.rc.ucl.ac.uk:3306)/"
@@ -116,6 +118,7 @@ var (
 	searchJob       = kingpin.Flag("job", "Single specific job number to search for.").Short('j').PlaceHolder("<job number>").Default("-1").Int()
 	searchMHost     = kingpin.Flag("host", "Search for jobs that used a given node as the master. (Wildcards okay.)").Short('n').PlaceHolder("<hostname>").Default("(none)").String()
 	searchCluster   = kingpin.Flag("cluster", "Search jobs run in a given cluster (myriad|legion|grace|thomas|michael|kathleen) (Default: this cluster)").Short('c').PlaceHolder("<cluster>").Default("auto").String()
+	searchEndPeriod = kingpin.Flag("end-period", "Limits search to jobs ending in a particular year-month. (Removes other time limit.)").PlaceHolder("<year-month>").Default("").String()
 	searchArbQuery  = kingpin.Flag("query", "Arbitrary query WHERE clause to include.").Short('Q').PlaceHolder("<query>").Hidden().Default("").String()
 	showInfoEls     = kingpin.Flag("list-elements", "Show list of elements that can be displayed.").Short('l').Bool()
 	infoEls         = kingpin.Flag("info", "Show selected info (CSV list).").Short('i').Default("fstime,fetime,hostname,owner,job_number,task_number,exit_status,job_name").String()
@@ -208,7 +211,8 @@ func main() {
 	// Searching for a specific job is fast enough and specific enough that we should
 	//  ignore the time bounds unless explicitly specified
 	// We also disable the default time limit if a specific number of jobs is searched for
-	if (*searchJob < 0) && (*searchBackHours == -1) && (*searchLast < 0) {
+	// Or if a specific period is being searched for
+	if (*searchJob < 0) && (*searchBackHours == -1) && (*searchLast < 0) && (*searchEndPeriod == "") {
 		*searchBackHours = 48
 	}
 	if (*searchBackHours > -1) && (!*searchNoLimits) {
@@ -266,6 +270,19 @@ func main() {
 		} else {
 			conditions = append(conditions, fmt.Sprintf("hostname = \"%s\" ", safeHost))
 		}
+	}
+
+	if *searchEndPeriod != "" {
+		endPeriodTime, err := time.Parse("2006-01", *searchEndPeriod)
+		if err != nil {
+			log.Fatal("Error: Invalid period provided. Please use year-month, e.g. 2022-11")
+		}
+		endPeriodTimePlusMonth := endPeriodTime.AddDate(0, 1, 0)
+
+		endPeriodUnixTime := endPeriodTime.Unix()
+		endPeriodPMUnixTime := endPeriodTimePlusMonth.Unix()
+
+		conditions = append(conditions, fmt.Sprintf("end_time >= %d AND end_time < %d", endPeriodUnixTime, endPeriodPMUnixTime))
 	}
 
 	if *searchArbQuery != "" {
