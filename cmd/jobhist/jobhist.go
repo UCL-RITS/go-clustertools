@@ -273,7 +273,7 @@ func main() {
 	}
 
 	if *searchEndPeriod != "" {
-		endPeriodTime, err := time.Parse(*searchEndPeriod, "2006-01")
+		endPeriodTime, err := time.Parse("2006-01", *searchEndPeriod)
 		if err != nil {
 			log.Fatal("Error: Invalid period provided. Please use year-month, e.g. 2022-11")
 		}
