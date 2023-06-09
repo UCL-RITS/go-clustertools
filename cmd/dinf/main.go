@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/UCL-RITS/go-clustertools/internal/adhelper"
+	"github.com/alecthomas/kingpin/v2"
 	"github.com/go-ldap/ldap/v3"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var defaultPasswordFiles = []string{os.Getenv("DINF_ADPWFILE"), os.Getenv("HOME") + "/.adpw", "/shared/ucl/etc/adpw"}
@@ -31,7 +31,7 @@ var (
 	searchBase    = app.Flag("base", "Search base in the LDAP tree.").Short('b').Default("DC=ad,DC=ucl,DC=ac,DC=uk").String()
 	returnFields  = app.Flag("output", "Command-separated fields to show in output. (Default: all)").Short('o').PlaceHolder("field[,field...]").String()
 
-	bareVals   = app.Flag("bare", "Just print the values, without field names, no DN object labels.").Default("false").Bool()
+	bareVals  = app.Flag("bare", "Just print the values, without field names, no DN object labels.").Default("false").Bool()
 	rawQuery  = app.Flag("raw", "Mandatory argument is a raw query, don't build a query yourself.").Default("false").Bool()
 	quietMode = app.Flag("quiet", "Don't print output, just return 0 if there are results or 1 if not.").Default("false").Bool()
 
