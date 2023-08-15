@@ -122,6 +122,7 @@ var (
 	searchArbQuery  = kingpin.Flag("query", "Arbitrary query WHERE clause to include.").Short('Q').PlaceHolder("<query>").Hidden().Default("").String()
 	showInfoEls     = kingpin.Flag("list-elements", "Show list of elements that can be displayed.").Short('l').Bool()
 	infoEls         = kingpin.Flag("info", "Show selected info (CSV list).").Short('i').Default("fstime,fetime,hostname,owner,job_number,task_number,exit_status,job_name").String()
+	omitFails       = kingpin.Flat("omit-fails", "Omit jobs with a non-zero SGE failure code.").Short('f').Bool()
 	// TODO: implement timeout
 	//timeoutSeconds  = kingpin.Flag("timeout", "Seconds to wait for database response.").Short('t').Default("3").Int()
 	commitLabel string
@@ -283,6 +284,10 @@ func main() {
 		endPeriodPMUnixTime := endPeriodTimePlusMonth.Unix()
 
 		conditions = append(conditions, fmt.Sprintf("end_time >= %d AND end_time < %d", endPeriodUnixTime, endPeriodPMUnixTime))
+	}
+
+	if *omitFails {
+		conditions = append(conditions, "failed != 0")
 	}
 
 	if *searchArbQuery != "" {
