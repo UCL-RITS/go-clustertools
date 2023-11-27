@@ -254,12 +254,12 @@ func getSingleVUfromVUL(vus *[]*VaspUser, userEmail string) *VaspUser {
 }
 
 func printSingleVU(vu *VaspUser) {
-	fmt.Printf("Name: %s %s\nAddress: %s\nValid To: %s\nKind: %s\nLicence: %s\n", vu.FormerNames, vu.LatterNames, vu.EmailAddress, vu.ValidToTimeString(), vu.EntryKind, strings.Join(vu.LicencedFor(), ","))
+	fmt.Printf("Name: %s %s\nAddress: %s\nValid To: %s\nKind: %s\nLicence: %s\n", vu.FormerNames, vu.LatterNames, vu.EmailAddress, vu.ValidToTimeString(), vu.EntryKind, vu.LicencedForString())
 }
 
 func tabulateVUs(vus *[]*VaspUser) {
 	for _, vu := range *vus {
-		fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\n", vu.FormerNames, vu.LatterNames, vu.EmailAddress, vu.ValidToTimeString(), vu.EntryKind, strings.Join(vu.LicencedFor(), ","))
+		fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\n", vu.FormerNames, vu.LatterNames, vu.EmailAddress, vu.ValidToTimeString(), vu.EntryKind, vu.LicencedForString())
 	}
 }
 
