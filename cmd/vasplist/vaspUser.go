@@ -28,18 +28,18 @@ func (vu *VaspUser) ValidToTimeString() string {
 	return vu.ValidToTime.Format("2006-01-02")
 }
 
-func (vu *VaspUser) LicencedForString() string {
-	licences := vu.LicencedFor()
+func (vu *VaspUser) LicensedForString() string {
+	licenses := vu.LicensedFor()
 
-	if len(licences) == 0 {
+	if len(licenses) == 0 {
 		return "-"
 	}
-	return strings.Join(licences, ",")
+	return strings.Join(licenses, ",")
 }
 
 func (vu *VaspUser) IsLicensedFor(licenseName string) bool {
-	licences := vu.LicencedFor()
-	for _, l := range licences {
+	licenses := vu.LicensedFor()
+	for _, l := range licenses {
 		if l == licenseName {
 			return true
 		}
@@ -47,11 +47,11 @@ func (vu *VaspUser) IsLicensedFor(licenseName string) bool {
 	return false
 }
 
-func (vu *VaspUser) LicencedFor() []string {
-	var licences []string
+func (vu *VaspUser) LicensedFor() []string {
+	var licenses []string
 
 	// Unhelpfully, they don't directly tell us what users are licensed for, only
-	//  the date their licence is valid until, and we have to translate that into
+	//  the date their license is valid until, and we have to translate that into
 	//  a 5/6 entitlement by comparing it to the cut-off date for VASP 6 access.
 
 	// Validity dates are only relevant for HPC license members, not the other classes
@@ -70,13 +70,13 @@ func (vu *VaspUser) LicencedFor() []string {
 	// The official cut-off date is 2019-07-01. (Last checked: 2023-11-27)
 	vasp6CutOffDate := time.Date(2019, time.July, 1, 0, 0, 0, 0, time.UTC)
 
-	licences = append(licences, "vasp5")
+	licenses = append(licenses, "vasp5")
 
 	if vu.ValidToTime.After(vasp6CutOffDate) {
-		licences = append(licences, "vasp6")
+		licenses = append(licenses, "vasp6")
 	}
 
-	return licences
+	return licenses
 }
 
 func getLicensedList(vul *[]*VaspUser, licenseName string) *[]*VaspUser {

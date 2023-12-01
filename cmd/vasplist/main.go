@@ -29,7 +29,7 @@ type VaspListConnector struct {
 type VaspCreds struct {
 	Username   string
 	Password   string
-	LicenceNum string
+	LicenseNum string
 }
 
 func (vc *VaspCreds) MustHaveCredentials() error {
@@ -40,8 +40,8 @@ func (vc *VaspCreds) MustHaveCredentials() error {
 	if vc.Password == "" {
 		unsetCreds = append(unsetCreds, "password")
 	}
-	if vc.LicenceNum == "" {
-		unsetCreds = append(unsetCreds, "licence number")
+	if vc.LicenseNum == "" {
+		unsetCreds = append(unsetCreds, "license number")
 	}
 	if len(unsetCreds) == 0 {
 		return nil
@@ -60,7 +60,7 @@ func init() {
 
 	VC.Username = os.Getenv("VASPTOOL_USERNAME")
 	VC.Password = os.Getenv("VASPTOOL_PASSWORD")
-	VC.LicenceNum = os.Getenv("VASPTOOL_LICNUM")
+	VC.LicenseNum = os.Getenv("VASPTOOL_LICNUM")
 }
 
 func main() {
@@ -136,7 +136,7 @@ func addVaspUserToList(bow *browser.Browser, userEmail string) error {
 	// This is a JQuery-style selector
 	fm, err := bow.Form("#add-hpc-user div div form")
 	fm.Input("email", userEmail)
-	fm.Input("license_id", VC.LicenceNum)
+	fm.Input("license_id", VC.LicenseNum)
 	// The license_id field seems to be autofilled and hidden in the page in the browser.
 	// I'm guessing that's a work of JS
 
@@ -274,12 +274,12 @@ func getSingleVUfromVUL(vus *[]*VaspUser, userEmail string) *VaspUser {
 }
 
 func printSingleVU(vu *VaspUser) {
-	fmt.Printf("Name: %s %s\nAddress: %s\nValid To: %s\nKind: %s\nLicence: %s\n", vu.FormerNames, vu.LatterNames, vu.EmailAddress, vu.ValidToTimeString(), vu.EntryKind, vu.LicencedForString())
+	fmt.Printf("Name: %s %s\nAddress: %s\nValid To: %s\nKind: %s\nLicense: %s\n", vu.FormerNames, vu.LatterNames, vu.EmailAddress, vu.ValidToTimeString(), vu.EntryKind, vu.LicensedForString())
 }
 
 func tabulateVUs(vus *[]*VaspUser) {
 	for _, vu := range *vus {
-		fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\n", vu.FormerNames, vu.LatterNames, vu.EmailAddress, vu.ValidToTimeString(), vu.EntryKind, vu.LicencedForString())
+		fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\n", vu.FormerNames, vu.LatterNames, vu.EmailAddress, vu.ValidToTimeString(), vu.EntryKind, vu.LicensedForString())
 	}
 }
 
