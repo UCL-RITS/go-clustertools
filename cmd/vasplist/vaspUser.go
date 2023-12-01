@@ -37,6 +37,16 @@ func (vu *VaspUser) LicencedForString() string {
 	return strings.Join(licences, ",")
 }
 
+func (vu *VaspUser) IsLicensedFor(licenseName string) bool {
+	licences := vu.LicencedFor()
+	for _, l := range licences {
+		if l == licenseName {
+			return true
+		}
+	}
+	return false
+}
+
 func (vu *VaspUser) LicencedFor() []string {
 	var licences []string
 
@@ -67,4 +77,14 @@ func (vu *VaspUser) LicencedFor() []string {
 	}
 
 	return licences
+}
+
+func getLicensedList(vul *[]*VaspUser, licenseName string) *[]*VaspUser {
+	resultList := []*VaspUser{}
+	for _, vu := range *vul {
+		if vu.IsLicensedFor(licenseName) {
+			resultList = append(resultList, vu)
+		}
+	}
+	return &resultList
 }

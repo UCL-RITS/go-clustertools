@@ -18,6 +18,7 @@ import (
 
 var addUserFlag string
 var showUserFlag string
+var showLicListFlag string
 
 type VaspListConnector struct {
 	VaspCreds
@@ -54,6 +55,7 @@ var VC VaspCreds
 func init() {
 	flag.StringVar(&addUserFlag, "add", "", "attempt to add a user (by email address) to the list")
 	flag.StringVar(&showUserFlag, "show", "", "show a single user (by email address)")
+	flag.StringVar(&showLicListFlag, "liclist", "", "show list of users with a given license")
 	flag.Parse()
 
 	VC.Username = os.Getenv("VASPTOOL_USERNAME")
@@ -94,6 +96,24 @@ func main() {
 			return
 		}
 		printSingleVU(vu)
+		return
+	}
+	if showLicListFlag != "" {
+		vul, err := getVaspUserList(b)
+		if err != nil {
+			log.Fatalln("could not get user list: ", err)
+		}
+
+		licensedList := getLicensedList(vul, showLicListFlag)
+
+		if len(*licensedList) == 0 {
+			log.Fatalln("no users match that license")
+			return
+		}
+
+		for _, vu := range *licensedList {
+			fmt.Println(vu.EmailAddress)
+		}
 		return
 	}
 
